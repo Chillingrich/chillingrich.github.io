@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChillingRich</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=Space+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080808; --line: #1a1a1a; --muted: #333333;
+    --dim: #555555; --text: #c8c8c8; --white: #f0ede8; --gold: #b8995a;
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Cormorant Garamond', serif; overflow: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .35;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  }
+  .wrap { position: relative; z-index: 1; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .rule { width: 1px; height: 72px; background: linear-gradient(to bottom, transparent, var(--muted)); margin-bottom: 44px; opacity: 0; animation: fadeIn 2s ease .2s forwards; }
+  .monogram { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .35em; color: var(--gold); text-transform: uppercase; margin-bottom: 24px; opacity: 0; animation: fadeUp 1.2s ease .5s forwards; }
+  h1 { font-size: clamp(56px, 9vw, 100px); font-weight: 300; letter-spacing: -.01em; color: var(--white); line-height: 1; margin-bottom: 14px; opacity: 0; animation: fadeUp 1.2s ease .7s forwards; }
+  h1 em { font-style: italic; color: var(--gold); }
+  .tagline { font-size: clamp(11px, 1.5vw, 15px); font-weight: 300; letter-spacing: .18em; color: var(--dim); text-transform: uppercase; opacity: 0; animation: fadeUp 1.2s ease .9s forwards; }
+  .rule-bottom { width: 1px; height: 72px; background: linear-gradient(to top, transparent, var(--muted)); margin-top: 44px; opacity: 0; animation: fadeIn 2s ease .3s forwards; }
+  .footer { position: fixed; bottom: 28px; left: 0; right: 0; text-align: center; font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: .22em; color: var(--muted); text-transform: uppercase; opacity: 0; animation: fadeIn 2s ease 1.6s forwards; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="rule"></div>
+  <div class="monogram">CR &middot; Est. 2026</div>
+  <h1>Chilling<em>Rich</em></h1>
+  <div class="tagline">Algorithmic Trading Intelligence</div>
+  <div class="rule-bottom"></div>
+</div>
+<div class="footer">chillingrich.github.io</div>
+</body>
+</html>
