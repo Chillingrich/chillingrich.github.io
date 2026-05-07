@@ -267,9 +267,9 @@ tr:hover td { background: var(--bg3); }
   <div id="dropZone">
     <div class="drop-title">[ ↓ ]</div>
     <div class="drop-sub">
-      <strong>Drop MACD_Log_history.csv here</strong> to load historical trades<br>
-      or click "Load CSV" above · live trades auto-fetch from Google Drive<br><br>
-      💡 Drop history file first → live trades merge in automatically<br>
+      <strong>Auto-loading master CSV from GitHub...</strong><br>
+      หรือ drop CSV ใหม่เพื่ออัพเดทข้อมูล<br><br>
+      💡 master CSV โหลดอัตโนมัติทุกครั้งที่เปิด dashboard<br>
       Duplicates detected by <strong>ticket number</strong> or <strong>open_time + symbol + type + lot</strong>
     </div>
   </div>
@@ -1075,6 +1075,30 @@ async function fetchFromGDrive() {
 
 fetchFromGDrive();
 setInterval(fetchFromGDrive, 30000);
+
+// ── AUTO-LOAD MASTER CSV FROM GITHUB PAGES ──
+async function fetchMasterCSV() {
+  try {
+    const url = 'https://chillingrich.github.io/data/MACD_Log_master.csv?t=' + Date.now();
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text   = await res.text();
+    const trades = parseCSV(text);
+    if(!trades.length) return;
+    historyTrades = trades;
+    rebuildAllTrades();
+    if(allTrades.length) {
+      showDashboard(allTrades);
+      applyDateFilter();
+    }
+    setLastUpdated(`📂 master loaded (${trades.length}) · ` + new Date().toLocaleTimeString());
+    console.log('Master CSV loaded:', trades.length, 'trades');
+  } catch(e) {
+    console.log('Master CSV not available yet:', e.message);
+  }
+}
+
+fetchMasterCSV();
 
 document.getElementById('fileInput').addEventListener('change', e => loadFile(e.target.files[0]));
 
