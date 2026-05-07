@@ -465,7 +465,7 @@ function applyDateFilter() {
     if(currentSymbol !== 'all' && t.symbol !== currentSymbol) return false;
     // Date filter
     if(from || to) {
-      const dt = (t[field] || '').substring(0, 10);
+      const dt = (t[field] || '').substring(0, 10).replace(/\./g, '-');
       if(from && dt < from) return false;
       if(to   && dt > to)   return false;
     }
