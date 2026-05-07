@@ -433,19 +433,24 @@ function setDateMode(mode, el) {
 
 function getDateRange() {
   const now = new Date();
+  // Use local date (not UTC) to avoid timezone offset issues
+  const pad = n => String(n).padStart(2,'0');
+  const localDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+
   if(currentPreset === 'all') return { from: null, to: null };
   if(currentPreset === 'today') {
-    const d = now.toISOString().split('T')[0];
+    const d = localDate(now);
     return { from: d, to: d };
   }
   if(currentPreset === 'week') {
     const dow = now.getDay();
-    const mon = new Date(now); mon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
-    return { from: mon.toISOString().split('T')[0], to: now.toISOString().split('T')[0] };
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+    return { from: localDate(mon), to: localDate(now) };
   }
   if(currentPreset === 'month') {
     const m = new Date(now.getFullYear(), now.getMonth(), 1);
-    return { from: m.toISOString().split('T')[0], to: now.toISOString().split('T')[0] };
+    return { from: localDate(m), to: localDate(now) };
   }
   if(currentPreset === 'custom') {
     return { from: document.getElementById('dateFrom').value || null, to: document.getElementById('dateTo').value || null };
