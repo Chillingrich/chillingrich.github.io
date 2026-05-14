@@ -223,6 +223,8 @@ tr:hover td { background: var(--bg3); }
     <button class="upload-btn" id="stopBtn" onclick="stopWatch()" style="border-color:var(--red);color:var(--red);display:none;">■ Stop</button>
     <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Load CSV</button>
     <input type="file" id="fileInput" accept=".csv">
+    <button class="upload-btn" style="border-color:var(--xau);color:var(--xau);" onclick="document.getElementById('mt5Input').click()">Load MT5 History</button>
+    <input type="file" id="mt5Input" accept=".html,.htm">
   </div>
 </header>
 
@@ -468,11 +470,11 @@ function applyDateFilter() {
     if(currentEAFilter !== 'all' && t.ea_name !== currentEAFilter) return false;
     // Symbol filter
     if(currentSymbol !== 'all' && t.symbol !== currentSymbol) return false;
-    // Date filter
+    // Date filter — normalize MT5 "2026-04-10 ..." and CSV "2026.04.10 ..." → "YYYY-MM-DD"
     if(from || to) {
-      const dt = (t[field] || '').substring(0, 10).replace(/\./g, '-');
-      if(from && dt < from) return false;
-      if(to   && dt > to)   return false;
+      const raw = (t[field] || '').substring(0, 10).replace(/\./g, '-').replace(/\//g, '-');
+      if(from && raw < from) return false;
+      if(to   && raw > to)   return false;
     }
     return true;
   });
@@ -686,7 +688,7 @@ function openEAModal(eaName) {
 
   // Equity curve
   if(modalChart) { modalChart.destroy(); modalChart = null; }
-  const sorted = [...trades].sort((a,b) => new Date(a.close_time.replace(/\./g,'-')) - new Date(b.close_time.replace(/\./g,'-')));
+  const sorted = [...trades].sort((a,b) => parseTradeDate(a.close_time) - parseTradeDate(b.close_time));
   let bal = 0; const data = [0];
   sorted.forEach(t => { bal += t.profit_usd; data.push(parseFloat(bal.toFixed(2))); });
   const labels = data.map((_,i) => i === 0 ? 'Start' : '#'+i);
@@ -795,12 +797,21 @@ function renderEACompare() {
   });
 }
 
+// ── UNIVERSAL DATE PARSER ──
+// Handles MT5 format "2026-04-10 21:05:40" and CSV format "2026.04.10 21:05:40"
+function parseTradeDate(s) {
+  if(!s) return new Date(0);
+  // Normalize: replace dots in date part only, keep space+time as-is
+  const clean = s.replace(/(\d{4})[./](\d{2})[./](\d{2})/, '$1-$2-$3');
+  return new Date(clean);
+}
+
 function renderEquity(trades, filter) {
   destroyChart('equity');
   const legend = document.getElementById('equityLegend');
   let datasets = [];
 
-  const sorted = [...trades].sort((a,b) => new Date(a.close_time.replace(/\./g,'-')) - new Date(b.close_time.replace(/\./g,'-')));
+  const sorted = [...trades].sort((a,b) => parseTradeDate(a.close_time) - parseTradeDate(b.close_time));
 
   if(filter === 'all') {
     // Combined line
@@ -812,7 +823,7 @@ function renderEquity(trades, filter) {
     const eas = [...new Set(trades.map(t => t.ea_name))].filter(e => e !== 'Manual');
     eas.forEach(ea => {
       let b = 0;
-      const eaT = [...trades.filter(t=>t.ea_name===ea)].sort((a,c)=>new Date(a.close_time.replace(/\./g,'-'))-new Date(c.close_time.replace(/\./g,'-')));
+      const eaT = [...trades.filter(t=>t.ea_name===ea)].sort((a,c)=>parseTradeDate(a.close_time)-parseTradeDate(c.close_time));
       const d = [0]; eaT.forEach(t => { b += t.profit_usd; d.push(parseFloat(b.toFixed(2))); });
       const col = eaColor(ea);
       datasets.push({ label:ea, data:d, borderColor:col, backgroundColor:'transparent', fill:false, tension:.3, pointRadius:0, borderWidth:1.5, borderDash:[4,3] });
@@ -1106,6 +1117,174 @@ async function fetchMasterCSV() {
 fetchMasterCSV();
 
 document.getElementById('fileInput').addEventListener('change', e => loadFile(e.target.files[0]));
+document.getElementById('mt5Input').addEventListener('change', e => loadMT5File(e.target.files[0]));
+
+// ── MT5 HTML HISTORY PARSER ──
+// Parses MT5 "Save as Report" HTML → converts to same trade object format as CSV
+function parseMT5Html(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const rows = doc.querySelectorAll('tr');
+  const trades = [];
+
+  rows.forEach(row => {
+    // Only process trade rows (white or light grey background)
+    const bg = (row.getAttribute('bgcolor') || '').toUpperCase();
+    if(bg !== '#FFFFFF' && bg !== '#F7F7F7') return;
+
+    // Get all td elements — browser collapses hidden colspan into 1 invisible cell
+    // We need VISIBLE cells only (exclude class="hidden")
+    const allTds = Array.from(row.querySelectorAll('td'));
+    // Remove hidden cells
+    const visible = allTds.filter(td => !td.classList.contains('hidden'));
+    const vals = visible.map(td => td.textContent.trim());
+
+    // MT5 visible columns after removing hidden:
+    // 0=OpenTime, 1=PositionID, 2=Symbol, 3=Type,
+    // 4=Volume, 5=OpenPrice, 6=SL, 7=TP,
+    // 8=CloseTime, 9=ClosePrice, 10=Commission, 11=Swap, 12=Profit
+    if(vals.length < 12) return;
+
+    const openTime  = vals[0];
+    const posID     = vals[1];
+    const symbol    = vals[2];
+    const type      = (vals[3] || '').toLowerCase();
+
+    if(!symbol || symbol.length < 3) return;
+    if(type !== 'buy' && type !== 'sell') return;
+
+    const vol        = parseFloat(vals[4])  || 0;
+    const openPrice  = parseFloat(vals[5])  || 0;
+    const sl         = parseFloat(vals[6])  || 0;
+    const tp         = parseFloat(vals[7])  || 0;
+    const closeTime  = vals[8]              || '';
+    const closePrice = parseFloat(vals[9])  || 0;
+    const commission = parseFloat(vals[10]) || 0;
+    const swap       = parseFloat(vals[11]) || 0;
+    const profit     = parseFloat(vals[12]) || 0;
+
+    if(!openTime || !closeTime || vol === 0) return;
+
+    // Parse MT5 date: "2026.04.10 21:05:40" → JS Date
+    const parseDate = s => {
+      if(!s) return null;
+      // Replace dots in date part only: 2026.04.10 → 2026-04-10
+      const clean = s.replace(/(\d{4})\.(\d{2})\.(\d{2})/, '$1-$2-$3');
+      return new Date(clean);
+    };
+    const openD  = parseDate(openTime);
+    const closeD = parseDate(closeTime);
+    const durMin = (openD && closeD) ? Math.round((closeD - openD) / 60000) : 0;
+
+    // Session — MT5 ICMarkets server = GMT+3
+    // Convert: subtract 3hrs to get UTC, then classify
+    const hourLocal = openD ? openD.getHours() : 0; // MT5 time as-is (server local)
+    let session = 'OffHour';
+    if(hourLocal >= 4  && hourLocal < 10) session = 'Asia';
+    if(hourLocal >= 10 && hourLocal < 15) session = 'London';
+    if(hourLocal >= 15 && hourLocal < 19) session = 'Overlap';
+    if(hourLocal >= 18 && hourLocal < 24) session = 'NewYork';
+
+    // Profit pips (XAUUSD: 1 pip = 0.1)
+    const priceDiff  = type === 'buy' ? closePrice - openPrice : openPrice - closePrice;
+    const profitPips = parseFloat((priceDiff * 10).toFixed(1));
+    const slDiff     = type === 'buy' ? openPrice - sl : sl - openPrice;
+    const slPips     = sl > 0 ? parseFloat((slDiff * 10).toFixed(1)) : 0;
+    const totalPnl   = parseFloat((profit + commission + swap).toFixed(2));
+
+    // Format date: "2026.04.10 21:05:40" → "2026-04-10 21:05:40"
+    const fmtDate = s => s ? s.replace(/(\d{4})\.(\d{2})\.(\d{2})/, '$1-$2-$3') : '';
+
+    trades.push({
+      ticket:         posID,
+      open_time:      fmtDate(openTime),
+      close_time:     fmtDate(closeTime),
+      symbol,
+      type:           type.toUpperCase(),
+      lot:            vol.toFixed(2),
+      open_price:     openPrice,
+      close_price:    closePrice,
+      sl,
+      tp,
+      commission,
+      swap,
+      profit_usd:     totalPnl,
+      profit_pips:    profitPips,
+      sl_pips:        slPips,
+      duration_min:   durMin,
+      session,
+      exit_reason:    'HISTORY',
+      ea_name:        'MT5_History',
+      be_triggered:   'false',
+      trail_triggered:'false',
+      rr_actual:      slPips > 0 ? parseFloat((profitPips / slPips).toFixed(2)) : 0,
+      magic:          '0',
+      timeframe:      'HISTORY',
+    });
+  });
+
+  return trades;
+}
+
+function loadMT5File(file) {
+  if(!file) return;
+  document.getElementById('fileName').textContent = '📊 ' + file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    let html;
+    try {
+      // MT5 exports UTF-16LE — decode from ArrayBuffer
+      const buf = e.target.result;
+      const bytes = new Uint8Array(buf);
+      // Check BOM: FF FE = UTF-16LE, FE FF = UTF-16BE
+      if(bytes[0] === 0xFF && bytes[1] === 0xFE) {
+        html = new TextDecoder('utf-16le').decode(buf);
+      } else if(bytes[0] === 0xFE && bytes[1] === 0xFF) {
+        html = new TextDecoder('utf-16be').decode(buf);
+      } else {
+        html = new TextDecoder('utf-8').decode(buf);
+      }
+    } catch(err) {
+      html = new TextDecoder('utf-8').decode(e.target.result);
+    }
+    const trades = parseMT5Html(html);
+    if(!trades.length) {
+      alert('MT5 History: ไม่พบข้อมูล trade\nตรวจสอบว่า export จาก MT5 → Account History → Save as Report (HTML)');
+      return;
+    }
+    historyTrades = trades;
+    rebuildAllTrades();
+    showDashboard(allTrades);
+    applyDateFilter();
+    setLastUpdated(`📊 MT5 loaded (${trades.length} trades) · ` + new Date().toLocaleTimeString());
+    console.log('MT5 parsed:', trades.length, 'trades', trades[0]);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── AUTO-FETCH MT5 HISTORY FROM GITHUB ──
+async function fetchMT5History() {
+  try {
+    const url = 'https://chillingrich.github.io/data/trades.html?t=' + Date.now();
+    const res = await fetch(url);
+    if(!res.ok) return; // silent fail if not uploaded yet
+    const html = await res.text();
+    const trades = parseMT5Html(html);
+    if(!trades.length) return;
+    historyTrades = trades;
+    rebuildAllTrades();
+    if(allTrades.length) {
+      showDashboard(allTrades);
+      applyDateFilter();
+    }
+    setLastUpdated(`📊 MT5 history auto-loaded (${trades.length} trades) · ` + new Date().toLocaleTimeString());
+    console.log('MT5 History from GitHub:', trades.length, 'trades');
+  } catch(e) {
+    console.log('MT5 history not available yet:', e.message);
+  }
+}
+
+fetchMT5History();
 
 const dz = document.getElementById('dropZone');
 dz.addEventListener('click', () => {
@@ -1114,7 +1293,17 @@ dz.addEventListener('click', () => {
 });
 dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
 dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); loadFile(e.dataTransfer.files[0]); });
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(!file) return;
+  if(file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+    loadMT5File(file);
+  } else {
+    loadFile(file);
+  }
+});
 </script>
 </body>
 </html>
