@@ -1225,18 +1225,24 @@ async function fetchMT5History() {
   try {
     const url = 'https://chillingrich.github.io/data/trades.html?t=' + Date.now();
     const res = await fetch(url);
-    if(!res.ok) return; // silent fail if not uploaded yet
-    const html = await res.text();
+    if(!res.ok) return;
+    const buf   = await res.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let html;
+    if(bytes[0] === 0xFF && bytes[1] === 0xFE) {
+      html = new TextDecoder('utf-16le').decode(buf);
+    } else if(bytes[0] === 0xFE && bytes[1] === 0xFF) {
+      html = new TextDecoder('utf-16be').decode(buf);
+    } else {
+      html = new TextDecoder('utf-8').decode(buf);
+    }
     const trades = parseMT5Html(html);
     if(!trades.length) return;
     historyTrades = trades;
     rebuildAllTrades();
-    if(allTrades.length) {
-      showDashboard(allTrades);
-      applyDateFilter();
-    }
-    setLastUpdated(`📊 MT5 history auto-loaded (${trades.length} trades) · ` + new Date().toLocaleTimeString());
-    console.log('MT5 History from GitHub:', trades.length, 'trades');
+    if(allTrades.length) { showDashboard(allTrades); applyDateFilter(); }
+    setLastUpdated(`📊 MT5 auto-loaded (${trades.length} trades) · ` + new Date().toLocaleTimeString());
+    console.log('MT5 from GitHub:', trades.length, 'trades');
   } catch(e) {
     console.log('MT5 history not available yet:', e.message);
   }
