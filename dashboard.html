@@ -985,24 +985,20 @@ function mergeTrades(base, incoming) {
   return { trades: [...map.values()], dupsFound };
 }
 
-// ── HISTORY BASE (loaded from manual drop) ──
-let historyTrades = []; // base from MACD_Log_history.csv
-let liveTrades    = []; // from Google Drive MACD_Log.csv
+let historyTrades = [];
 let dedupStats    = { total: 0, dupsFound: 0 };
 
 function rebuildAllTrades() {
-  const { trades, dupsFound } = mergeTrades(historyTrades, liveTrades);
-  dedupStats = { total: trades.length, dupsFound };
-  allTrades = trades;
+  allTrades = historyTrades;
+  dedupStats = { total: allTrades.length, dupsFound: 0 };
   updateDedupBadge();
 }
 
 function updateDedupBadge() {
   let el = document.getElementById('dedupBadge');
   if(!el) return;
-  const h = historyTrades.length, l = liveTrades.length, d = dedupStats.dupsFound;
-  el.textContent = `hist:${h} + live:${l}${d > 0 ? ` · ${d} dup removed` : ''} = ${dedupStats.total} trades`;
-  el.style.color = d > 0 ? 'var(--xau)' : 'var(--muted)';
+  el.textContent = `${dedupStats.total} trades`;
+  el.style.color = 'var(--muted)';
 }
 
 function loadFile(file) {
@@ -1050,49 +1046,9 @@ async function pickAndWatch() {
   } catch(e) {}
 }
 
-// ── GOOGLE DRIVE AUTO-FETCH ──
-function gdriveUrl() {
-  return `https://script.google.com/macros/s/AKfycbzLLs3cxNxg7PqLvgiHZwbcI42PbSDe8DONvnjSZLc-NJHjO4ll2D4JLpW-AZ0ivUwJ/exec?t=${Date.now()}`;
-}
+// GDrive removed — using MT5 HTML history via GitHub instead
 
-async function fetchFromGDrive() {
-  try {
-    const res = await fetch(gdriveUrl());
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text   = await res.text();
-    const trades = parseCSV(text);
-
-    document.getElementById('watchBtn').style.display = 'none';
-    document.getElementById('stopBtn').style.display  = 'none';
-
-    if(!trades.length) {
-      setLastUpdated('⚪ no live trades yet · ' + new Date().toLocaleTimeString());
-      return;
-    }
-
-    const prevLiveCount = liveTrades.length;
-    liveTrades = trades;
-    rebuildAllTrades();
-
-    const changed = liveTrades.length !== prevLiveCount;
-    const liveLabel = `☁ live:${liveTrades.length}`;
-    document.getElementById('fileName').textContent = liveLabel;
-
-    if(allTrades.length) {
-      showDashboard(allTrades);
-      applyDateFilter();
-    }
-    setLastUpdated((changed ? '🟢 updated · ' : '⚪ no change · ') + new Date().toLocaleTimeString());
-  } catch(e) {
-    setLastUpdated('⚠ gdrive error · ' + new Date().toLocaleTimeString());
-    console.error('GDrive fetch error:', e);
-  }
-}
-
-fetchFromGDrive();
-setInterval(fetchFromGDrive, 30000);
-
-// ── AUTO-LOAD MASTER CSV FROM GITHUB PAGES ──
+// ── AUTO-LOAD MASTER CSV FROM GITHUB PAGES (fallback) ──
 async function fetchMasterCSV() {
   try {
     const url = 'https://chillingrich.github.io/data/MACD_Log_master.csv?t=' + Date.now();
@@ -1103,18 +1059,20 @@ async function fetchMasterCSV() {
     if(!trades.length) return;
     historyTrades = trades;
     rebuildAllTrades();
-    if(allTrades.length) {
-      showDashboard(allTrades);
-      applyDateFilter();
-    }
+    if(allTrades.length) { showDashboard(allTrades); applyDateFilter(); }
     setLastUpdated(`📂 master loaded (${trades.length}) · ` + new Date().toLocaleTimeString());
-    console.log('Master CSV loaded:', trades.length, 'trades');
   } catch(e) {
     console.log('Master CSV not available yet:', e.message);
   }
 }
 
-fetchMasterCSV();
+// ── INIT: Load MT5 history first, then GDrive as live supplement ──
+async function initDashboard() {
+  await fetchMT5History();
+  if(!historyTrades.length) await fetchMasterCSV();
+}
+
+initDashboard();
 
 document.getElementById('fileInput').addEventListener('change', e => loadFile(e.target.files[0]));
 document.getElementById('mt5Input').addEventListener('change', e => loadMT5File(e.target.files[0]));
