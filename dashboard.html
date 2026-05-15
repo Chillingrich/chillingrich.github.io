@@ -180,12 +180,12 @@ tr:hover td{background:var(--bg3)}
       <div class="modal-title" id="modalTitle">EA Detail</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div style="display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;background:var(--bg2)">
-      <button class="dpreset active" onclick="setModalPreset('all',this)">All</button>
-      <button class="dpreset" onclick="setModalPreset('today',this)">Today</button>
-      <button class="dpreset" onclick="setModalPreset('week',this)">This week</button>
-      <button class="dpreset" onclick="setModalPreset('month',this)">This month</button>
-      <button class="dpreset" onclick="setModalPreset('custom',this)">Custom</button>
+    <div style="display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid #1e2530;flex-wrap:wrap;background:#0e1117">
+      <button onclick="setModalPreset('all',this)"   style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border:1px solid #00e5a0;background:#00e5a0;color:#080a0d;cursor:pointer" id="dp_all">All</button>
+      <button onclick="setModalPreset('today',this)" style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border:1px solid #1e2530;background:transparent;color:#d4dbe8;cursor:pointer" id="dp_today">Today</button>
+      <button onclick="setModalPreset('week',this)"  style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border:1px solid #1e2530;background:transparent;color:#d4dbe8;cursor:pointer" id="dp_week">This week</button>
+      <button onclick="setModalPreset('month',this)" style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border:1px solid #1e2530;background:transparent;color:#d4dbe8;cursor:pointer" id="dp_month">This month</button>
+      <button onclick="setModalPreset('custom',this)" style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border:1px solid #1e2530;background:transparent;color:#d4dbe8;cursor:pointer" id="dp_custom">Custom</button>
     </div>
     <div id="modalCustomRange" style="display:none;align-items:center;gap:8px;padding:8px 18px;border-bottom:1px solid var(--border);background:var(--bg2)">
       <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">FROM</span>
@@ -477,8 +477,19 @@ function openModal(magic) {
 
 function setModalPreset(preset, el) {
   modalPreset = preset;
-  el.closest('div').querySelectorAll('.dpreset').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
+  ['all','today','week','month','custom'].forEach(p => {
+    const b = document.getElementById('dp_'+p);
+    if(!b) return;
+    if(p === preset) {
+      b.style.background = '#00e5a0';
+      b.style.color = '#080a0d';
+      b.style.borderColor = '#00e5a0';
+    } else {
+      b.style.background = 'transparent';
+      b.style.color = '#d4dbe8';
+      b.style.borderColor = '#1e2530';
+    }
+  });
   document.getElementById('modalCustomRange').style.display = preset==='custom' ? 'flex' : 'none';
   renderModal();
 }
