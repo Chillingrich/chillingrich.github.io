@@ -56,9 +56,10 @@ main{padding:20px 24px}
 .ea-hint{font-family:var(--mono);font-size:8px;color:var(--muted);opacity:.5}
 
 /* EQUITY + SESSION ROW */
-.chart-row{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px}
+.chart-row{display:grid;grid-template-columns:1fr 280px;gap:12px;margin-bottom:12px}
+@media(max-width:900px){.chart-row{grid-template-columns:1fr}}
 .section{background:var(--bg2);border:1px solid var(--border);padding:16px 18px}
-.chart-wrap{position:relative;height:200px}
+.chart-wrap{position:relative;height:160px}
 
 /* SESSION HEAT */
 .session-heat{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -78,14 +79,14 @@ main{padding:20px 24px}
 /* MODAL */
 #modal{display:none;position:fixed;inset:0;z-index:1000;background:rgba(4,6,10,.88);align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
 #modal.open{display:flex}
-.modal-box{background:var(--bg2);border:1px solid var(--border);width:100%;max-width:960px;margin:auto}
-.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:10}
+.modal-box{background:var(--bg2);border:1px solid var(--border);width:100%;max-width:960px;margin:auto;display:flex;flex-direction:column}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
 .modal-title{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.06em}
 .modal-close{font-size:18px;color:var(--muted);cursor:pointer;background:none;border:none;transition:color .15s}
 .modal-close:hover{color:var(--text)}
 
 /* MODAL DATE BAR */
-.modal-date-bar{display:flex;align-items:center;gap:0;padding:0 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;background:var(--bg2);position:sticky;top:49px;z-index:9}
+.modal-date-bar{display:flex;align-items:center;gap:0;padding:0 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;background:var(--bg2)}
 .dpreset{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:8px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
 .dpreset:hover{color:var(--text)}
 .dpreset.active{color:var(--text);border-bottom-color:var(--green)}
@@ -182,7 +183,7 @@ tr:hover td{background:var(--bg3)}
       <button class="dpreset" onclick="setModalPreset('month',this)">This month</button>
       <button class="dpreset" onclick="setModalPreset('custom',this)">Custom</button>
     </div>
-    <div id="modalCustomRange" style="position:sticky;top:97px;background:var(--bg2);z-index:9;display:none;align-items:center;gap:8px;padding:8px 18px;border-bottom:1px solid var(--border)">
+    <div id="modalCustomRange" style="display:none;align-items:center;gap:8px;padding:8px 18px;border-bottom:1px solid var(--border);background:var(--bg2)">
       <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">FROM</span>
       <input type="date" id="modalFrom" onchange="renderModal()">
       <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">TO</span>
