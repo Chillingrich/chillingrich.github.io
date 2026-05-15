@@ -55,14 +55,13 @@ main{padding:20px 24px}
 .ea-bar-fill{height:100%}
 .ea-hint{font-family:var(--mono);font-size:8px;color:var(--muted);opacity:.5}
 
-/* EQUITY + SESSION ROW */
-.chart-row{display:grid;grid-template-columns:1fr 280px;gap:12px;margin-bottom:12px}
-@media(max-width:900px){.chart-row{grid-template-columns:1fr}}
-.section{background:var(--bg2);border:1px solid var(--border);padding:16px 18px}
-.chart-wrap{position:relative;height:160px;width:100%}
+/* EQUITY + SESSION */
+.section{background:var(--bg2);border:1px solid var(--border);padding:14px 18px;margin-bottom:10px}
+.chart-wrap{position:relative;height:180px;width:100%}
 
 /* SESSION HEAT */
 .session-heat{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:600px){.session-heat{grid-template-columns:repeat(2,1fr)}}
 .heat-cell{background:var(--bg3);border:1px solid var(--border);padding:10px 12px;text-align:center}
 .heat-name{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
 .heat-val{font-family:var(--mono);font-size:14px;font-weight:700;margin-bottom:2px}
@@ -155,16 +154,21 @@ tr:hover td{background:var(--bg3)}
     <div class="sec-title">EA breakdown — click to view details</div>
     <div class="ea-grid" id="eaGrid"></div>
 
-    <!-- EQUITY + SESSION -->
-    <div class="chart-row">
-      <div class="section">
-        <div class="sec-title">Equity curve — combined</div>
+    <!-- EQUITY CURVE (collapsible) -->
+    <div class="section" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleEquity()">
+        <div class="sec-title" style="margin-bottom:0;border:none;padding:0">Equity curve — combined</div>
+        <span id="equityToggleBtn" style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em">[ HIDE ]</span>
+      </div>
+      <div id="equityWrap" style="margin-top:12px">
         <div class="chart-wrap"><canvas id="equityChart" role="img" aria-label="Combined equity curve">Equity</canvas></div>
       </div>
-      <div class="section">
-        <div class="sec-title">Session summary</div>
-        <div class="session-heat" id="sessionHeat"></div>
-      </div>
+    </div>
+
+    <!-- SESSION SUMMARY (below equity) -->
+    <div class="section" style="margin-bottom:12px">
+      <div class="sec-title">Session summary</div>
+      <div class="session-heat" id="sessionHeat"></div>
     </div>
   </div>
 </main>
@@ -176,7 +180,7 @@ tr:hover td{background:var(--bg3)}
       <div class="modal-title" id="modalTitle">EA Detail</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div class="modal-date-bar" style="position:sticky;top:49px;background:var(--bg2);z-index:9;">
+    <div style="display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;background:var(--bg2)">
       <button class="dpreset active" onclick="setModalPreset('all',this)">All</button>
       <button class="dpreset" onclick="setModalPreset('today',this)">Today</button>
       <button class="dpreset" onclick="setModalPreset('week',this)">This week</button>
@@ -473,7 +477,7 @@ function openModal(magic) {
 
 function setModalPreset(preset, el) {
   modalPreset = preset;
-  document.querySelectorAll('.dpreset').forEach(b => b.classList.remove('active'));
+  el.closest('div').querySelectorAll('.dpreset').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('modalCustomRange').style.display = preset==='custom' ? 'flex' : 'none';
   renderModal();
@@ -593,6 +597,14 @@ function renderModal() {
       <td style="color:var(--muted);font-size:9px;max-width:120px;overflow:hidden;text-overflow:ellipsis">${t.comment||'-'}</td>
     </tr>`;
   }).join('');
+}
+
+function toggleEquity() {
+  const wrap = document.getElementById('equityWrap');
+  const btn  = document.getElementById('equityToggleBtn');
+  const hidden = wrap.style.display === 'none';
+  wrap.style.display = hidden ? 'block' : 'none';
+  btn.textContent = hidden ? '[ HIDE ]' : '[ SHOW ]';
 }
 
 function closeModal() {
