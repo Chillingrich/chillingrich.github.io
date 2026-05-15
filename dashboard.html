@@ -147,6 +147,21 @@ tr:hover td{background:var(--bg3)}
   </div>
 
   <div id="dashboard" style="display:none">
+    <!-- MAIN DATE FILTER -->
+    <div style="display:flex;gap:6px;padding:10px 0;margin-bottom:12px;flex-wrap:wrap">
+      <button onclick="setMainPreset('all',this)"   id="mp_all"   style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border:1px solid #00e5a0;background:#00e5a0;color:#080a0d;cursor:pointer">All</button>
+      <button onclick="setMainPreset('today',this)" id="mp_today" style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border:1px solid #1e2530;background:transparent;color:#d4dbe8;cursor:pointer">Today</button>
+      <button onclick="setMainPreset('week',this)"  id="mp_week"  style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border:1px solid #1e2530;background:transparent;color:#d4dbe8;cursor:pointer">This week</button>
+      <button onclick="setMainPreset('month',this)" id="mp_month" style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border:1px solid #1e2530;background:transparent;color:#d4dbe8;cursor:pointer">This month</button>
+      <button onclick="setMainPreset('custom',this)" id="mp_custom" style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border:1px solid #1e2530;background:transparent;color:#d4dbe8;cursor:pointer">Custom</button>
+      <div id="mainCustomRange" style="display:none;align-items:center;gap:8px;margin-left:8px">
+        <span style="font-family:'Space Mono',monospace;font-size:9px;color:#4a5568">FROM</span>
+        <input type="date" id="mainFrom" onchange="applyMainFilter()" style="background:#151920;border:1px solid #1e2530;color:#d4dbe8;font-family:'Space Mono',monospace;font-size:9px;padding:4px 8px">
+        <span style="font-family:'Space Mono',monospace;font-size:9px;color:#4a5568">TO</span>
+        <input type="date" id="mainTo" onchange="applyMainFilter()" style="background:#151920;border:1px solid #1e2530;color:#d4dbe8;font-family:'Space Mono',monospace;font-size:9px;padding:4px 8px">
+      </div>
+    </div>
+
     <!-- OVERALL STATS -->
     <div class="stat-row" id="statRow"></div>
 
@@ -234,13 +249,69 @@ function eaInfo(magic) {
 
 // ── STATE ──
 let allTrades     = [];
-let modalTrades   = [];  // all trades for current modal EA
+let mainPreset    = 'all';
+let mainFiltered  = [];
+let modalTrades   = [];
 let modalFiltered = [];
 let modalEAName   = '';
 let modalPreset   = 'all';
 let modalFrom     = null;
 let modalTo       = null;
 let charts        = {};
+
+// ── MAIN DATE FILTER ──
+function getMainDateRange() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const ld  = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  if(mainPreset==='all')   return {from:null,to:null};
+  if(mainPreset==='today') { const d=ld(now); return {from:d,to:d}; }
+  if(mainPreset==='week')  {
+    const dow=now.getDay(); const mon=new Date(now);
+    mon.setDate(now.getDate()-(dow===0?6:dow-1));
+    return {from:ld(mon),to:ld(now)};
+  }
+  if(mainPreset==='month') return {from:ld(new Date(now.getFullYear(),now.getMonth(),1)),to:ld(now)};
+  if(mainPreset==='custom') return {
+    from:document.getElementById('mainFrom').value||null,
+    to:  document.getElementById('mainTo').value||null
+  };
+  return {from:null,to:null};
+}
+
+function setMainPreset(preset, el) {
+  mainPreset = preset;
+  ['all','today','week','month','custom'].forEach(p => {
+    const b = document.getElementById('mp_'+p);
+    if(!b) return;
+    if(p === preset) {
+      b.style.background = '#00e5a0';
+      b.style.color = '#080a0d';
+      b.style.borderColor = '#00e5a0';
+    } else {
+      b.style.background = 'transparent';
+      b.style.color = '#d4dbe8';
+      b.style.borderColor = '#1e2530';
+    }
+  });
+  document.getElementById('mainCustomRange').style.display = preset==='custom' ? 'flex' : 'none';
+  applyMainFilter();
+}
+
+function applyMainFilter() {
+  const {from,to} = getMainDateRange();
+  mainFiltered = allTrades.filter(t => {
+    if(!from && !to) return true;
+    const d = normDate(t.close_time);
+    if(from && d < from) return false;
+    if(to   && d > to)   return false;
+    return true;
+  });
+  renderStats(mainFiltered);
+  renderEAGrid(mainFiltered);
+  renderEquity(mainFiltered);
+  renderSessionHeat(mainFiltered);
+}
 
 // ── PARSE MT5 HTML (v1.10 format with Magic + Comment columns) ──
 function parseMT5Html(html) {
@@ -337,6 +408,7 @@ function parseTradeDate(s) {
 function showDashboard(trades) {
   document.getElementById('dropZone').classList.add('hidden');
   document.getElementById('dashboard').style.display = 'block';
+  mainFiltered = trades;
   renderStats(trades);
   renderEAGrid(trades);
   renderEquity(trades);
