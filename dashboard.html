@@ -466,8 +466,20 @@ function openModal(magic) {
     `<span style="color:${info.color}">${info.name}</span>
      <span style="color:var(--muted);font-size:9px;font-weight:400"> — ${modalTrades.length} total trades</span>`;
 
-  document.querySelectorAll('.dpreset').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.dpreset')[0].classList.add('active');
+  // Reset all preset buttons
+  ['all','today','week','month','custom'].forEach(p => {
+    const b = document.getElementById('dp_'+p);
+    if(!b) return;
+    if(p === 'all') {
+      b.style.background = '#00e5a0';
+      b.style.color = '#080a0d';
+      b.style.borderColor = '#00e5a0';
+    } else {
+      b.style.background = 'transparent';
+      b.style.color = '#d4dbe8';
+      b.style.borderColor = '#1e2530';
+    }
+  });
   document.getElementById('modalCustomRange').style.display = 'none';
 
   document.getElementById('modal').classList.add('open');
