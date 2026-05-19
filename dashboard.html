@@ -9,7 +9,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
 :root {
   --bg:#080a0d; --bg2:#0e1117; --bg3:#151920; --border:#1e2530;
-  --text:#d4dbe8; --muted:#4a5568; --green:#00e5a0; --red:#ff4d6d;
+  --text:#d4dbe8; --muted:#a0aec0; --green:#00e5a0; --red:#ff4d6d;
   --xau:#f5c842; --btc:#f7931a; --blue:#4d9fff; --purple:#a78bfa;
   --pink:#fb7185; --teal:#2dd4bf;
   --mono:'Space Mono',monospace; --sans:'DM Sans',sans-serif;
@@ -155,9 +155,9 @@ tr:hover td{background:var(--bg3)}
       <button onclick="setMainPreset('month',this)" id="mp_month" style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border:1px solid #1e2530;background:transparent;color:#d4dbe8;cursor:pointer">This month</button>
       <button onclick="setMainPreset('custom',this)" id="mp_custom" style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border:1px solid #1e2530;background:transparent;color:#d4dbe8;cursor:pointer">Custom</button>
       <div id="mainCustomRange" style="display:none;align-items:center;gap:8px;margin-left:8px">
-        <span style="font-family:'Space Mono',monospace;font-size:9px;color:#4a5568">FROM</span>
+        <span style="font-family:'Space Mono',monospace;font-size:9px;color:#a0aec0">FROM</span>
         <input type="date" id="mainFrom" onchange="applyMainFilter()" style="background:#151920;border:1px solid #1e2530;color:#d4dbe8;font-family:'Space Mono',monospace;font-size:9px;padding:4px 8px">
-        <span style="font-family:'Space Mono',monospace;font-size:9px;color:#4a5568">TO</span>
+        <span style="font-family:'Space Mono',monospace;font-size:9px;color:#a0aec0">TO</span>
         <input type="date" id="mainTo" onchange="applyMainFilter()" style="background:#151920;border:1px solid #1e2530;color:#d4dbe8;font-family:'Space Mono',monospace;font-size:9px;padding:4px 8px">
       </div>
     </div>
@@ -505,7 +505,7 @@ function renderEquity(trades) {
            datasets:[{data, borderColor:'#00e5a0', backgroundColor:'rgba(0,229,160,.05)', fill:true, tension:.3, pointRadius:0, borderWidth:2}] },
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}},
-      scales:{ x:{display:false}, y:{ticks:{color:'#4a5568',font:{size:10},callback:v=>'$'+v}, grid:{color:'#1e2530'}} } }
+      scales:{ x:{display:false}, y:{ticks:{color:'#a0aec0',font:{size:10},callback:v=>'$'+v}, grid:{color:'#1e2530'}} } }
   });
 }
 
@@ -658,7 +658,7 @@ function renderModal() {
           datasets:[{data:eqData,borderColor:col,backgroundColor:col+'18',fill:true,tension:.3,pointRadius:0,borderWidth:2}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false}},
-      scales:{x:{display:false},y:{ticks:{color:'#4a5568',font:{size:10},callback:v=>'$'+v},grid:{color:'#1e2530'}}}}
+      scales:{x:{display:false},y:{ticks:{color:'#a0aec0',font:{size:10},callback:v=>'$'+v},grid:{color:'#1e2530'}}}}
   });
 
   // Session breakdown
