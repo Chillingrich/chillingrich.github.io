@@ -381,6 +381,7 @@ function eaInfo(magic) {
 
 // ── STATE ──
 let allTrades     = [];
+let peakDataMap   = {};   // posID → peak record
 let mainPreset    = 'all';
 let mainFiltered  = [];
 let modalTrades   = [];
@@ -931,13 +932,20 @@ function deleteAnn(posID) {
 function openAnn(posID) {
   annCurrentPosID = posID;
   annCurrentTrade = allTrades.find(t => t.posID === posID);
-  const t = annCurrentTrade;
+  const t   = annCurrentTrade;
   const ann = getAnn(posID) || {};
+  const pk  = peakDataMap[posID] || null;  // auto peak data
 
   // Trade info
   if(t) {
     const isPos = t.profit_usd > 0;
     const col   = isPos ? 'var(--green)' : 'var(--red)';
+    const pkBadge = pk
+      ? `&nbsp;|&nbsp; Peak <b style="color:var(--xau)">${pk.peakR}R</b> &nbsp;
+         MAE <b style="color:var(--red)">${pk.maeR}R</b> &nbsp;
+         EntryEff <b style="color:var(--blue)">${pk.entryEfficiency}%</b> &nbsp;
+         ExitEff <b style="color:var(--purple)">${pk.exitEfficiency}%</b>`
+      : '<span style="color:var(--muted)"> (no peak data yet)</span>';
     document.getElementById('annTradeInfo').innerHTML =
       `<span style="color:var(--text)">#${posID}</span> &nbsp;
        <span class="tag ${t.type==='BUY'?'tag-buy':'tag-sell'}">${t.type}</span> &nbsp;
@@ -948,7 +956,8 @@ function openAnn(posID) {
        SL <span>${t.sl||'-'}</span> &nbsp;
        TP <span>${t.tp||'-'}</span> &nbsp;
        Lot <span>${t.vol}</span> &nbsp;
-       P&L <b style="color:${col}">${isPos?'+':''}$${t.profit_usd.toFixed(2)}</b>`;
+       P&L <b style="color:${col}">${isPos?'+':''}$${t.profit_usd.toFixed(2)}</b>
+       ${pkBadge}`;
     document.getElementById('annTitle').textContent =
       `Annotate #${posID} · ${t.symbol} ${t.type}`;
   }
@@ -958,10 +967,22 @@ function openAnn(posID) {
   restoreChips('sl',   ann.sl   ? [ann.sl] : []);
   restoreChips('why',  ann.why  || []);
 
-  // Restore inputs
-  document.getElementById('annPeakPrice').value  = ann.peakPrice  || '';
-  document.getElementById('annGhostPrice').value = ann.ghostPrice || '';
-  document.getElementById('annNotes').value      = ann.notes      || '';
+  // Auto-fill Peak Price from peakDataMap if not manually set
+  const savedPeak  = ann.peakPrice  || (pk ? pk.peakPrice  : '');
+  const savedGhost = ann.ghostPrice || '';
+  document.getElementById('annPeakPrice').value  = savedPeak;
+  document.getElementById('annGhostPrice').value = savedGhost;
+  document.getElementById('annNotes').value      = ann.notes || '';
+
+  // Show auto-filled indicator
+  const peakInput = document.getElementById('annPeakPrice');
+  if(pk && !ann.peakPrice) {
+    peakInput.style.borderColor = 'var(--xau)';
+    peakInput.title = 'Auto-filled from PeakData.mq5';
+  } else {
+    peakInput.style.borderColor = '';
+    peakInput.title = '';
+  }
 
   // Restore confidence
   document.querySelectorAll('.conf-chip').forEach(c => {
@@ -1067,7 +1088,24 @@ document.addEventListener('click', e => {
 // Ghost calc on input
 document.getElementById('annGhostPrice')?.addEventListener('input', updateGhostCalc);
 
+// ── AUTO FETCH PEAK DATA FROM GITHUB ──
+async function fetchPeakData() {
+  try {
+    const url = 'https://chillingrich.github.io/data/peak_data.json?t=' + Date.now();
+    const res = await fetch(url);
+    if(!res.ok) return;
+    const json = await res.json();
+    if(!json.trades || !json.trades.length) return;
+    peakDataMap = {};
+    json.trades.forEach(t => { peakDataMap[t.posID] = t; });
+    console.log('PeakData loaded:', json.trades.length, 'records');
+  } catch(e) {
+    console.log('PeakData fetch:', e.message);
+  }
+}
+
 fetchFromGitHub();
+fetchPeakData();
 </script>
 </body>
 </html>
