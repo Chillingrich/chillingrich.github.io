@@ -150,6 +150,34 @@ tr:hover td{background:var(--bg3)}
 .conf-chip.c-sure{color:#00e5a0}.conf-chip.c-sure.active{background:rgba(0,229,160,.15);border-color:#00e5a0}
 .conf-chip.c-maybe{color:#f5c842}.conf-chip.c-maybe.active{background:rgba(245,200,66,.15);border-color:#f5c842}
 .conf-chip.c-unsure{color:#ff4d6d}.conf-chip.c-unsure.active{background:rgba(255,77,109,.15);border-color:#ff4d6d}
+
+/* MODAL TABS */
+.modal-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--bg2);padding:0 18px}
+.modal-tab{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:10px 16px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px}
+.modal-tab:hover{color:var(--text)}
+.modal-tab.active{color:var(--green);border-bottom-color:var(--green)}
+
+/* ANALYTICS GRID */
+.an-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:600px){.an-grid{grid-template-columns:1fr}}
+.an-card{background:var(--bg3);border:1px solid var(--border);padding:12px 14px}
+.an-card-title{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
+.an-chart-wrap{position:relative;height:160px}
+.an-stat-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border)}
+.an-stat-row:last-child{border-bottom:none}
+.an-stat-label{font-family:var(--mono);font-size:9px;color:var(--muted)}
+.an-stat-val{font-family:var(--mono);font-size:10px;font-weight:700}
+.an-bar-wrap{margin-top:6px}
+.an-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.an-bar-label{font-family:var(--mono);font-size:8px;color:var(--muted);min-width:80px;text-align:right}
+.an-bar-track{flex:1;height:6px;background:var(--bg2);border-radius:0}
+.an-bar-fill{height:100%;transition:width .3s}
+.an-bar-val{font-family:var(--mono);font-size:8px;min-width:36px;text-align:right}
+.an-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.an-kpi{background:var(--bg3);border:1px solid var(--border);padding:10px 12px;text-align:center}
+.an-kpi-label{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.an-kpi-val{font-family:var(--mono);font-size:16px;font-weight:700}
+.an-full{grid-column:1/-1}
 </style>
 </head>
 <body>
@@ -340,7 +368,11 @@ tr:hover td{background:var(--bg3)}
       <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">TO</span>
       <input type="date" id="modalTo" onchange="renderModal()">
     </div>
-    <div class="modal-body">
+    <div class="modal-tabs">
+      <div class="modal-tab active" id="tab-trades" onclick="switchTab('trades')">Trades</div>
+      <div class="modal-tab" id="tab-analytics" onclick="switchTab('analytics')">Analytics</div>
+    </div>
+    <div class="modal-body" id="tab-body-trades">
       <div class="modal-stat-grid" id="modalStats"></div>
       <div class="modal-sec-title">Equity curve</div>
       <div class="modal-chart-wrap"><canvas id="modalEquity" role="img" aria-label="EA equity curve">Equity</canvas></div>
@@ -356,6 +388,9 @@ tr:hover td{background:var(--bg3)}
           <tbody id="modalTable"></tbody>
         </table>
       </div>
+    </div>
+    <div class="modal-body" id="tab-body-analytics" style="display:none">
+      <div id="analyticsContent"></div>
     </div>
   </div>
 </div>
@@ -908,6 +943,233 @@ dz.addEventListener('drop', e => {
   if(f) loadMT5File(f);
 });
 document.getElementById('mt5Input').addEventListener('change', e => loadMT5File(e.target.files[0]));
+
+// ── TAB SWITCH ──
+function switchTab(tab) {
+  document.getElementById('tab-trades').classList.toggle('active', tab==='trades');
+  document.getElementById('tab-analytics').classList.toggle('active', tab==='analytics');
+  document.getElementById('tab-body-trades').style.display    = tab==='trades'    ? 'block' : 'none';
+  document.getElementById('tab-body-analytics').style.display = tab==='analytics' ? 'block' : 'none';
+  if(tab==='analytics') renderAnalytics(modalFiltered);
+}
+
+// ── ANALYTICS ──
+function renderAnalytics(ts) {
+  const el = document.getElementById('analyticsContent');
+  if(!ts.length) { el.innerHTML = '<div style="color:var(--muted);font-family:var(--mono);font-size:11px;padding:20px">No trades in range</div>'; return; }
+
+  // Collect peak data for these trades
+  const withPeak = ts.filter(t => peakDataMap[t.posID]);
+
+  // ── KPI from peak data ──
+  const avgPeakR   = withPeak.length ? (withPeak.reduce((a,t)=>a+(peakDataMap[t.posID].peakR||0),0)/withPeak.length).toFixed(2) : '-';
+  const avgMaeR    = withPeak.length ? (withPeak.reduce((a,t)=>a+(peakDataMap[t.posID].maeR||0),0)/withPeak.length).toFixed(2) : '-';
+  const avgEntryEff= withPeak.length ? (withPeak.reduce((a,t)=>a+(peakDataMap[t.posID].entryEfficiency||0),0)/withPeak.length).toFixed(1) : '-';
+  const avgExitEff = withPeak.length ? (withPeak.reduce((a,t)=>a+(peakDataMap[t.posID].exitEfficiency||0),0)/withPeak.length).toFixed(1) : '-';
+  const avgActualR = withPeak.length ? (withPeak.reduce((a,t)=>a+(peakDataMap[t.posID].exitR||0),0)/withPeak.length).toFixed(2) : '-';
+
+  // ── Win/Loss split ──
+  const wins   = ts.filter(t=>t.profit_usd>0);
+  const losses = ts.filter(t=>t.profit_usd<=0);
+  const wr     = ts.length ? (wins.length/ts.length*100).toFixed(1) : 0;
+  const pnl    = ts.reduce((a,t)=>a+t.profit_usd,0);
+  const avgW   = wins.length   ? wins.reduce((a,t)=>a+t.profit_usd,0)/wins.length : 0;
+  const avgL   = losses.length ? Math.abs(losses.reduce((a,t)=>a+t.profit_usd,0)/losses.length) : 0;
+  const pf     = avgL > 0 ? (avgW*wins.length)/(avgL*losses.length) : 0;
+
+  // ── Buy vs Sell ──
+  const buys  = ts.filter(t=>t.type==='BUY');
+  const sells = ts.filter(t=>t.type==='SELL');
+  const buyWR  = buys.length  ? (buys.filter(t=>t.profit_usd>0).length/buys.length*100).toFixed(0)  : '-';
+  const sellWR = sells.length ? (sells.filter(t=>t.profit_usd>0).length/sells.length*100).toFixed(0) : '-';
+  const buyPnl  = buys.reduce((a,t)=>a+t.profit_usd,0);
+  const sellPnl = sells.reduce((a,t)=>a+t.profit_usd,0);
+
+  // ── Session performance ──
+  const sessions = ['Asia','London','Overlap','NewYork'];
+  const sessLabels = ['Asia','London','Overlap','NY'];
+  const sessData = sessions.map((s,i) => {
+    const st  = ts.filter(t=>t.session===s);
+    const sp  = st.reduce((a,t)=>a+t.profit_usd,0);
+    const swr = st.length ? st.filter(t=>t.profit_usd>0).length/st.length*100 : 0;
+    return {label:sessLabels[i], count:st.length, pnl:sp, wr:swr};
+  });
+  const maxAbsSess = Math.max(...sessData.map(s=>Math.abs(s.pnl)),1);
+
+  // ── Peak vs Actual scatter data ──
+  const scatterData = withPeak.map(t => ({
+    peakR:  peakDataMap[t.posID].peakR  || 0,
+    exitR:  peakDataMap[t.posID].exitR  || 0,
+    profit: t.profit_usd
+  }));
+
+  // ── MAE distribution ──
+  const maeBuckets = {'0-0.3R':0,'0.3-0.7R':0,'0.7-1R':0,'>1R':0};
+  withPeak.forEach(t => {
+    const m = Math.abs(peakDataMap[t.posID].maeR||0);
+    if(m<=0.3) maeBuckets['0-0.3R']++;
+    else if(m<=0.7) maeBuckets['0.3-0.7R']++;
+    else if(m<=1) maeBuckets['0.7-1R']++;
+    else maeBuckets['>1R']++;
+  });
+
+  const coveragePct = withPeak.length ? Math.round(withPeak.length/ts.length*100) : 0;
+
+  el.innerHTML = `
+  <!-- KPI Row -->
+  <div class="an-kpi-row">
+    <div class="an-kpi">
+      <div class="an-kpi-label">Avg Peak R</div>
+      <div class="an-kpi-val" style="color:var(--xau)">${avgPeakR}R</div>
+    </div>
+    <div class="an-kpi">
+      <div class="an-kpi-label">Avg Actual R</div>
+      <div class="an-kpi-val" style="color:${parseFloat(avgActualR)>=0?'var(--green)':'var(--red)'}">${avgActualR}R</div>
+    </div>
+    <div class="an-kpi">
+      <div class="an-kpi-label">R Left on Table</div>
+      <div class="an-kpi-val" style="color:var(--red)">${withPeak.length?(parseFloat(avgPeakR)-parseFloat(avgActualR)).toFixed(2):'—'}R</div>
+    </div>
+    <div class="an-kpi">
+      <div class="an-kpi-label">Entry Efficiency</div>
+      <div class="an-kpi-val" style="color:var(--blue)">${avgEntryEff}%</div>
+    </div>
+    <div class="an-kpi">
+      <div class="an-kpi-label">Exit Efficiency</div>
+      <div class="an-kpi-val" style="color:var(--purple)">${avgExitEff}%</div>
+    </div>
+    <div class="an-kpi">
+      <div class="an-kpi-label">Avg MAE R</div>
+      <div class="an-kpi-val" style="color:var(--red)">${avgMaeR}R</div>
+    </div>
+  </div>
+
+  <div class="an-grid">
+
+    <!-- Peak vs Actual -->
+    <div class="an-card">
+      <div class="an-card-title">Peak R vs Actual R (${withPeak.length} trades · ${coveragePct}% coverage)</div>
+      <div class="an-chart-wrap"><canvas id="scatterChart"></canvas></div>
+    </div>
+
+    <!-- Buy vs Sell -->
+    <div class="an-card">
+      <div class="an-card-title">Buy vs Sell</div>
+      <div class="an-stat-row">
+        <span class="an-stat-label">BUY (${buys.length} trades)</span>
+        <span class="an-stat-val" style="color:var(--green)">${buyWR}% WR &nbsp; ${buyPnl>=0?'+':''}$${buyPnl.toFixed(2)}</span>
+      </div>
+      <div class="an-stat-row">
+        <span class="an-stat-label">SELL (${sells.length} trades)</span>
+        <span class="an-stat-val" style="color:var(--red)">${sellWR}% WR &nbsp; ${sellPnl>=0?'+':''}$${sellPnl.toFixed(2)}</span>
+      </div>
+      <div style="margin-top:12px">
+        <div class="an-card-title">Profit Factor &amp; Win Rate</div>
+        <div class="an-stat-row">
+          <span class="an-stat-label">Profit Factor</span>
+          <span class="an-stat-val" style="color:${pf>=1.5?'var(--green)':pf<1?'var(--red)':'var(--text)'}">${pf.toFixed(2)}</span>
+        </div>
+        <div class="an-stat-row">
+          <span class="an-stat-label">Win Rate</span>
+          <span class="an-stat-val" style="color:${parseFloat(wr)>=50?'var(--green)':'var(--red)'}">${wr}%</span>
+        </div>
+        <div class="an-stat-row">
+          <span class="an-stat-label">Avg Win / Avg Loss</span>
+          <span class="an-stat-val"><span style="color:var(--green)">$${avgW.toFixed(2)}</span> / <span style="color:var(--red)">$${avgL.toFixed(2)}</span></span>
+        </div>
+        <div class="an-stat-row">
+          <span class="an-stat-label">Net P&amp;L</span>
+          <span class="an-stat-val" style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}$${pnl.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session Breakdown -->
+    <div class="an-card">
+      <div class="an-card-title">Session Performance</div>
+      <div class="an-bar-wrap">
+        ${sessData.map(s=>{
+          const col  = s.pnl>=0?'var(--green)':'var(--red)';
+          const pct  = Math.abs(s.pnl)/maxAbsSess*100;
+          return `<div class="an-bar-row">
+            <span class="an-bar-label">${s.label} (${s.count})</span>
+            <div class="an-bar-track"><div class="an-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+            <span class="an-bar-val" style="color:${col}">${s.pnl>=0?'+':''}$${s.pnl.toFixed(0)}</span>
+          </div>
+          <div class="an-bar-row" style="margin-top:-2px;margin-bottom:4px">
+            <span class="an-bar-label" style="color:var(--muted);font-size:7px">WR ${s.wr.toFixed(0)}%</span>
+            <div class="an-bar-track"><div class="an-bar-fill" style="width:${s.wr}%;background:var(--blue);opacity:.5"></div></div>
+            <span class="an-bar-val" style="color:var(--muted);font-size:7px">${s.wr.toFixed(0)}%</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- MAE Distribution -->
+    <div class="an-card">
+      <div class="an-card-title">MAE Distribution — How far against before recovery</div>
+      <div class="an-bar-wrap">
+        ${Object.entries(maeBuckets).map(([k,v])=>{
+          const pct = withPeak.length ? v/withPeak.length*100 : 0;
+          const col = k==='0-0.3R'?'var(--green)':k==='>1R'?'var(--red)':'var(--xau)';
+          return `<div class="an-bar-row">
+            <span class="an-bar-label">${k}</span>
+            <div class="an-bar-track"><div class="an-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+            <span class="an-bar-val" style="color:${col}">${v} (${pct.toFixed(0)}%)</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="margin-top:10px;font-family:var(--mono);font-size:8px;color:var(--muted)">
+        ${withPeak.length ? `${maeBuckets['0-0.3R']} trades (${(maeBuckets['0-0.3R']/withPeak.length*100).toFixed(0)}%) had MAE &lt; 0.3R — price went right way immediately` : ''}
+      </div>
+    </div>
+
+  </div>
+  <div style="font-family:var(--mono);font-size:8px;color:var(--muted);text-align:right;margin-top:4px">
+    Peak data: ${withPeak.length}/${ts.length} trades · Run PeakData.mq5 to update
+  </div>`;
+
+  // Render scatter chart
+  setTimeout(() => {
+    const ctx = document.getElementById('scatterChart');
+    if(!ctx) return;
+    if(charts.scatter) { charts.scatter.destroy(); delete charts.scatter; }
+    // diagonal line data
+    const maxR = Math.max(...scatterData.map(d=>d.peakR), 3);
+    charts.scatter = new Chart(ctx, {
+      type: 'scatter',
+      data: {
+        datasets: [
+          {
+            label: 'Trades',
+            data: scatterData.map(d=>({x:d.exitR, y:d.peakR})),
+            backgroundColor: scatterData.map(d=>d.profit>=0?'rgba(0,229,160,.6)':'rgba(255,77,109,.6)'),
+            pointRadius: 4,
+          },
+          {
+            label: 'Ideal (Exit at Peak)',
+            data: [{x:0,y:0},{x:maxR,y:maxR}],
+            type: 'line',
+            borderColor: 'rgba(255,255,255,.15)',
+            borderDash: [4,4],
+            pointRadius: 0,
+            fill: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend:{display:false}, tooltip:{callbacks:{
+          label: d => `Exit: ${d.parsed.x}R · Peak: ${d.parsed.y}R`
+        }}},
+        scales: {
+          x: { title:{display:true,text:'Actual R',color:'#a0aec0',font:{size:9}}, ticks:{color:'#a0aec0',font:{size:9}}, grid:{color:'#1e2530'} },
+          y: { title:{display:true,text:'Peak R',color:'#a0aec0',font:{size:9}},   ticks:{color:'#a0aec0',font:{size:9}}, grid:{color:'#1e2530'} }
+        }
+      }
+    });
+  }, 50);
+}
 
 // ── ANNOTATION SYSTEM ──
 const ANN_KEY = 'cr_annotations';
