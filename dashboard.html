@@ -117,6 +117,39 @@ tr:hover td{background:var(--bg3)}
 .tag-buy{background:rgba(0,229,160,.12);color:var(--green)}
 .tag-sell{background:rgba(255,77,109,.12);color:var(--red)}
 .pos{color:var(--green)} .neg{color:var(--red)}
+
+/* ANNOTATE BUTTON */
+.ann-btn{font-family:var(--mono);font-size:8px;padding:2px 8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.06em;transition:all .15s;white-space:nowrap}
+.ann-btn:hover{border-color:var(--blue);color:var(--blue)}
+.ann-btn.has-data{border-color:var(--green);color:var(--green)}
+
+/* ANNOTATE MODAL */
+#annModal{display:none;position:fixed;inset:0;z-index:2000;background:rgba(4,6,10,.92);align-items:center;justify-content:center;padding:20px}
+#annModal.open{display:flex}
+.ann-box{background:var(--bg2);border:1px solid var(--border);width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
+.ann-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1}
+.ann-hdr-title{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.06em}
+.ann-body{padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+.ann-section-label{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
+.ann-chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-family:var(--mono);font-size:9px;padding:4px 10px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;letter-spacing:.04em;transition:all .12s;user-select:none}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+.chip.active{border-color:var(--green);background:rgba(0,229,160,.12);color:var(--green)}
+.ann-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:10px;padding:6px 10px;outline:none}
+.ann-input:focus{border-color:var(--blue)}
+.ann-input-row{display:flex;gap:8px;align-items:center}
+.ann-input-label{font-family:var(--mono);font-size:9px;color:var(--muted);white-space:nowrap;min-width:80px}
+.ann-footer{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);background:var(--bg2);position:sticky;bottom:0}
+.ann-save{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:7px 20px;border:1px solid var(--green);background:var(--green);color:var(--bg);cursor:pointer;flex:1;transition:opacity .15s}
+.ann-save:hover{opacity:.85}
+.ann-cancel{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:7px 16px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+.ann-cancel:hover{border-color:var(--red);color:var(--red)}
+.ann-clear{font-family:var(--mono);font-size:9px;padding:7px 16px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;transition:all .15s}
+.ann-clear:hover{border-color:var(--red);color:var(--red)}
+.conf-chip{font-family:var(--mono);font-size:9px;padding:4px 12px;border:1px solid var(--border);background:transparent;cursor:pointer;letter-spacing:.04em;transition:all .12s}
+.conf-chip.c-sure{color:#00e5a0}.conf-chip.c-sure.active{background:rgba(0,229,160,.15);border-color:#00e5a0}
+.conf-chip.c-maybe{color:#f5c842}.conf-chip.c-maybe.active{background:rgba(245,200,66,.15);border-color:#f5c842}
+.conf-chip.c-unsure{color:#ff4d6d}.conf-chip.c-unsure.active{background:rgba(255,77,109,.15);border-color:#ff4d6d}
 </style>
 </head>
 <body>
@@ -188,6 +221,105 @@ tr:hover td{background:var(--bg3)}
   </div>
 </main>
 
+<!-- ANNOTATE MODAL -->
+<div id="annModal">
+  <div class="ann-box">
+    <div class="ann-hdr">
+      <div class="ann-hdr-title" id="annTitle">Annotate Trade</div>
+      <button class="modal-close" onclick="closeAnn()">✕</button>
+    </div>
+    <div class="ann-body">
+
+      <!-- Trade info strip -->
+      <div id="annTradeInfo" style="background:var(--bg3);border:1px solid var(--border);padding:8px 12px;font-family:var(--mono);font-size:9px;color:var(--muted);line-height:1.8"></div>
+
+      <!-- Exit Outcome -->
+      <div>
+        <div class="ann-section-label">Exit Outcome (เลือกได้หลายอัน)</div>
+        <div class="ann-chips" id="chips-exit">
+          <div class="chip" data-group="exit" data-val="TP">TP Hit</div>
+          <div class="chip" data-group="exit" data-val="SL">SL Hit</div>
+          <div class="chip" data-group="exit" data-val="BE">BE Hit</div>
+          <div class="chip" data-group="exit" data-val="Trail">Trail Hit</div>
+          <div class="chip" data-group="exit" data-val="Early+">Early+ (profit)</div>
+          <div class="chip" data-group="exit" data-val="Cut">Cut Loss</div>
+          <div class="chip" data-group="exit" data-val="Time">Time Exit</div>
+        </div>
+      </div>
+
+      <!-- SL Management -->
+      <div>
+        <div class="ann-section-label">SL Management</div>
+        <div class="ann-chips" id="chips-sl">
+          <div class="chip" data-group="sl" data-val="Hold">Never Moved</div>
+          <div class="chip" data-group="sl" data-val="BE">Moved to BE</div>
+          <div class="chip" data-group="sl" data-val="Trail-Wide">Trailed Wide</div>
+          <div class="chip" data-group="sl" data-val="Trail-Tight">Trailed Tight</div>
+          <div class="chip" data-group="sl" data-val="Partial">Partial Close</div>
+        </div>
+      </div>
+
+      <!-- Why it went wrong -->
+      <div>
+        <div class="ann-section-label">Why Wrong / Context (เลือกได้หลายอัน)</div>
+        <div class="ann-chips" id="chips-why">
+          <div class="chip" data-group="why" data-val="Bad Entry">Bad Entry</div>
+          <div class="chip" data-group="why" data-val="News">News/Spike</div>
+          <div class="chip" data-group="why" data-val="Wrong Dir">Wrong Direction</div>
+          <div class="chip" data-group="why" data-val="Moved SL Early">Moved SL Early</div>
+          <div class="chip" data-group="why" data-val="Chased">Chased Entry</div>
+          <div class="chip" data-group="why" data-val="FOMO">FOMO</div>
+          <div class="chip" data-group="why" data-val="Counter Trend">Counter Trend</div>
+          <div class="chip" data-group="why" data-val="No Plan">No Plan at Peak</div>
+          <div class="chip" data-group="why" data-val="Hesitation">Hesitation</div>
+          <div class="chip" data-group="why" data-val="Greed">Greed</div>
+          <div class="chip" data-group="why" data-val="Clean Setup">✓ Clean Setup</div>
+          <div class="chip" data-group="why" data-val="Patient">✓ Patient Entry</div>
+          <div class="chip" data-group="why" data-val="Trend Align">✓ Trend Aligned</div>
+        </div>
+      </div>
+
+      <!-- Peak & Ghost -->
+      <div>
+        <div class="ann-section-label">Peak & Ghost Exit</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="ann-input-row">
+            <span class="ann-input-label">Peak Price</span>
+            <input class="ann-input" id="annPeakPrice" type="number" step="0.01" placeholder="ราคาสูงสุดที่ขึ้นไปถึง">
+          </div>
+          <div class="ann-input-row">
+            <span class="ann-input-label">Ghost Exit</span>
+            <input class="ann-input" id="annGhostPrice" type="number" step="0.01" placeholder="ราคาที่ควรปิด (ถ้าปิดทันที)">
+          </div>
+        </div>
+        <div id="annGhostCalc" style="font-family:var(--mono);font-size:9px;color:var(--blue);margin-top:6px;min-height:16px"></div>
+      </div>
+
+      <!-- Confidence -->
+      <div>
+        <div class="ann-section-label">Confidence ในการจำ</div>
+        <div style="display:flex;gap:5px">
+          <div class="conf-chip c-sure" data-conf="Sure">🟢 Sure</div>
+          <div class="conf-chip c-maybe" data-conf="Maybe">🟡 Think So</div>
+          <div class="conf-chip c-unsure" data-conf="Unsure">🔴 Not Sure</div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div>
+        <div class="ann-section-label">Notes (optional)</div>
+        <textarea class="ann-input" id="annNotes" rows="2" placeholder="จดอะไรก็ได้..."></textarea>
+      </div>
+
+    </div>
+    <div class="ann-footer">
+      <button class="ann-clear" onclick="clearAnn()">Clear</button>
+      <button class="ann-cancel" onclick="closeAnn()">Cancel</button>
+      <button class="ann-save" onclick="saveAnn()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div id="modal" onclick="closeModalOnBg(event)">
   <div class="modal-box">
@@ -219,7 +351,7 @@ tr:hover td{background:var(--bg3)}
         <table>
           <thead><tr>
             <th>#</th><th>Type</th><th>Symbol</th><th>Open</th><th>Close</th>
-            <th>Duration</th><th>Pips</th><th>P&L $</th><th>Comment</th>
+            <th>Duration</th><th>Pips</th><th>P&L $</th><th>Comment</th><th>Annotate</th>
           </tr></thead>
           <tbody id="modalTable"></tbody>
         </table>
@@ -680,6 +812,11 @@ function renderModal() {
   document.getElementById('modalTradeCount').textContent = '('+ts.length+' trades)';
   document.getElementById('modalTable').innerHTML = [...sortedT].reverse().map((t,i)=>{
     const isPos = t.profit_usd > 0;
+    const ann   = getAnn(t.posID);
+    const hasAnn = ann && (ann.exit?.length || ann.sl || ann.why?.length);
+    const annLabel = hasAnn
+      ? (ann.exit||[]).join(',') || '•••'
+      : '+ add';
     return `<tr>
       <td style="color:var(--muted)">${ts.length-i}</td>
       <td><span class="tag ${t.type==='BUY'?'tag-buy':'tag-sell'}">${t.type}</span></td>
@@ -690,6 +827,7 @@ function renderModal() {
       <td class="${isPos?'pos':'neg'}">${t.profit_pips>0?'+':''}${t.profit_pips}</td>
       <td class="${isPos?'pos':'neg'}">${isPos?'+':''}$${t.profit_usd.toFixed(2)}</td>
       <td style="color:var(--muted);font-size:9px;max-width:120px;overflow:hidden;text-overflow:ellipsis">${t.comment||'-'}</td>
+      <td><button class="ann-btn ${hasAnn?'has-data':''}" onclick="openAnn('${t.posID}')">${annLabel}</button></td>
     </tr>`;
   }).join('');
 }
@@ -769,6 +907,165 @@ dz.addEventListener('drop', e => {
   if(f) loadMT5File(f);
 });
 document.getElementById('mt5Input').addEventListener('change', e => loadMT5File(e.target.files[0]));
+
+// ── ANNOTATION SYSTEM ──
+const ANN_KEY = 'cr_annotations';
+let annCurrentPosID = null;
+let annCurrentTrade = null;
+
+function getAllAnns() {
+  try { return JSON.parse(localStorage.getItem(ANN_KEY) || '{}'); } catch(e) { return {}; }
+}
+function getAnn(posID) { return getAllAnns()[posID] || null; }
+function saveAnnData(posID, data) {
+  const all = getAllAnns();
+  all[posID] = data;
+  localStorage.setItem(ANN_KEY, JSON.stringify(all));
+}
+function deleteAnn(posID) {
+  const all = getAllAnns();
+  delete all[posID];
+  localStorage.setItem(ANN_KEY, JSON.stringify(all));
+}
+
+function openAnn(posID) {
+  annCurrentPosID = posID;
+  annCurrentTrade = allTrades.find(t => t.posID === posID);
+  const t = annCurrentTrade;
+  const ann = getAnn(posID) || {};
+
+  // Trade info
+  if(t) {
+    const isPos = t.profit_usd > 0;
+    const col   = isPos ? 'var(--green)' : 'var(--red)';
+    document.getElementById('annTradeInfo').innerHTML =
+      `<span style="color:var(--text)">#${posID}</span> &nbsp;
+       <span class="tag ${t.type==='BUY'?'tag-buy':'tag-sell'}">${t.type}</span> &nbsp;
+       <span>${t.symbol}</span> &nbsp;
+       <span style="color:var(--muted)">${t.open_time} → ${t.close_time}</span><br>
+       Entry <b style="color:var(--text)">${t.openPrice}</b> &nbsp;
+       Exit <b style="color:var(--text)">${t.closePrice}</b> &nbsp;
+       SL <span>${t.sl||'-'}</span> &nbsp;
+       TP <span>${t.tp||'-'}</span> &nbsp;
+       Lot <span>${t.vol}</span> &nbsp;
+       P&L <b style="color:${col}">${isPos?'+':''}$${t.profit_usd.toFixed(2)}</b>`;
+    document.getElementById('annTitle').textContent =
+      `Annotate #${posID} · ${t.symbol} ${t.type}`;
+  }
+
+  // Restore chips
+  restoreChips('exit', ann.exit || []);
+  restoreChips('sl',   ann.sl   ? [ann.sl] : []);
+  restoreChips('why',  ann.why  || []);
+
+  // Restore inputs
+  document.getElementById('annPeakPrice').value  = ann.peakPrice  || '';
+  document.getElementById('annGhostPrice').value = ann.ghostPrice || '';
+  document.getElementById('annNotes').value      = ann.notes      || '';
+
+  // Restore confidence
+  document.querySelectorAll('.conf-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.conf === ann.confidence);
+  });
+
+  updateGhostCalc();
+  document.getElementById('annModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function restoreChips(group, vals) {
+  document.querySelectorAll(`.chip[data-group="${group}"]`).forEach(c => {
+    c.classList.toggle('active', vals.includes(c.dataset.val));
+  });
+}
+
+function closeAnn() {
+  document.getElementById('annModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function clearAnn() {
+  if(!annCurrentPosID) return;
+  if(!confirm('Clear all annotations for this trade?')) return;
+  deleteAnn(annCurrentPosID);
+  closeAnn();
+  renderModal();
+}
+
+function saveAnn() {
+  if(!annCurrentPosID) return;
+  const t = annCurrentTrade;
+
+  const exit = [...document.querySelectorAll('.chip[data-group="exit"].active')].map(c=>c.dataset.val);
+  const slChip = document.querySelector('.chip[data-group="sl"].active');
+  const sl   = slChip ? slChip.dataset.val : '';
+  const why  = [...document.querySelectorAll('.chip[data-group="why"].active')].map(c=>c.dataset.val);
+  const conf = document.querySelector('.conf-chip.active')?.dataset.conf || '';
+  const peakPrice  = parseFloat(document.getElementById('annPeakPrice').value)  || 0;
+  const ghostPrice = parseFloat(document.getElementById('annGhostPrice').value) || 0;
+  const notes = document.getElementById('annNotes').value.trim();
+
+  // Calculate R values if trade data available
+  let peakR = 0, ghostR = 0, ghostGap = 0;
+  if(t && t.sl > 0 && t.openPrice > 0) {
+    const slDist = Math.abs(t.openPrice - t.sl);
+    const direction = t.type === 'BUY' ? 1 : -1;
+    if(peakPrice)  peakR  = parseFloat(((peakPrice - t.openPrice) * direction / slDist).toFixed(2));
+    if(ghostPrice) ghostR = parseFloat(((ghostPrice - t.openPrice) * direction / slDist).toFixed(2));
+    if(ghostPrice && t.closePrice) {
+      const actualPnlPerUnit = (t.closePrice - t.openPrice) * direction;
+      const ghostPnlPerUnit  = (ghostPrice   - t.openPrice) * direction;
+      ghostGap = parseFloat(((ghostPnlPerUnit - actualPnlPerUnit) * t.vol * 100).toFixed(2));
+    }
+  }
+
+  saveAnnData(annCurrentPosID, {exit, sl, why, confidence:conf, peakPrice, ghostPrice, peakR, ghostR, ghostGap, notes, savedAt: new Date().toISOString()});
+  closeAnn();
+  renderModal();
+}
+
+function updateGhostCalc() {
+  const t = annCurrentTrade;
+  if(!t) return;
+  const ghost  = parseFloat(document.getElementById('annGhostPrice').value) || 0;
+  const el     = document.getElementById('annGhostCalc');
+  if(!ghost || !t.closePrice || !t.openPrice || !t.sl) { el.textContent = ''; return; }
+  const dir    = t.type === 'BUY' ? 1 : -1;
+  const slDist = Math.abs(t.openPrice - t.sl);
+  const ghostPnl  = (ghost - t.openPrice) * dir * t.vol * 100;
+  const actualPnl = t.profit_usd;
+  const gap       = ghostPnl - actualPnl;
+  const ghostR    = slDist > 0 ? ((ghost - t.openPrice) * dir / slDist).toFixed(2) : '?';
+  el.innerHTML = `Ghost P&L: <span style="color:var(--green)">+$${ghostPnl.toFixed(2)}</span> (${ghostR}R) &nbsp;|&nbsp; Actual: <span style="color:${actualPnl>=0?'var(--green)':'var(--red)'}">${actualPnl>=0?'+':''}$${actualPnl.toFixed(2)}</span> &nbsp;|&nbsp; Gap: <span style="color:var(--xau)">${gap>=0?'+':''}$${gap.toFixed(2)}</span>`;
+}
+
+// Chip toggle logic
+document.addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  const group = chip.dataset.group;
+  if(group === 'sl') {
+    // SL = single select
+    const wasActive = chip.classList.contains('active');
+    document.querySelectorAll('.chip[data-group="sl"]').forEach(c => c.classList.remove('active'));
+    if(!wasActive) chip.classList.add('active');
+  } else {
+    // exit, why = multi-select
+    chip.classList.toggle('active');
+  }
+});
+
+// Confidence chip toggle
+document.addEventListener('click', e => {
+  const cc = e.target.closest('.conf-chip');
+  if(!cc) return;
+  const wasActive = cc.classList.contains('active');
+  document.querySelectorAll('.conf-chip').forEach(c => c.classList.remove('active'));
+  if(!wasActive) cc.classList.add('active');
+});
+
+// Ghost calc on input
+document.getElementById('annGhostPrice')?.addEventListener('input', updateGhostCalc);
 
 fetchFromGitHub();
 </script>
