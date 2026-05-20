@@ -239,6 +239,42 @@ tr:hover td{background:var(--bg3)}
 #closePTModal{display:none;position:fixed;inset:0;z-index:3000;background:rgba(4,6,10,.92);align-items:center;justify-content:center;padding:20px}
 #closePTModal.open{display:flex}
 .cpt-box{background:var(--bg2);border:1px solid var(--border);width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+
+/* STRATEGY LIBRARY MODAL */
+#stratModal{display:none;position:fixed;inset:0;z-index:3000;background:rgba(4,6,10,.92);align-items:center;justify-content:center;padding:20px}
+#stratModal.open{display:flex}
+.strat-box{background:var(--bg2);border:1px solid var(--border);width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.strat-item{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--blue);padding:10px 14px;margin-bottom:6px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.strat-item-name{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text);margin-bottom:2px}
+.strat-item-desc{font-family:var(--mono);font-size:8px;color:var(--muted)}
+.strat-item-actions{display:flex;gap:4px;flex-shrink:0}
+
+/* TIMELINE */
+.tl-wrap{margin-top:10px;border-top:1px solid var(--border);padding-top:8px}
+.tl-title{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.tl-event{display:flex;gap:8px;align-items:flex-start;margin-bottom:5px;font-family:var(--mono);font-size:8px}
+.tl-time{color:var(--muted);white-space:nowrap;min-width:52px}
+.tl-icon{min-width:14px;text-align:center}
+.tl-text{color:var(--text);line-height:1.4}
+.tl-actions{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.tl-btn{font-family:var(--mono);font-size:8px;padding:3px 8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .12s;letter-spacing:.04em}
+.tl-btn:hover{border-color:var(--blue);color:var(--blue)}
+
+/* TIMELINE EVENT MODAL */
+#tlEventModal{display:none;position:fixed;inset:0;z-index:4000;background:rgba(4,6,10,.92);align-items:center;justify-content:center;padding:20px}
+#tlEventModal.open{display:flex}
+.tle-box{background:var(--bg2);border:1px solid var(--border);width:100%;max-width:400px}
+
+/* TRACK CHECKLIST MODAL */
+#trackModal{display:none;position:fixed;inset:0;z-index:3500;background:rgba(4,6,10,.92);align-items:center;justify-content:center;padding:20px}
+#trackModal.open{display:flex}
+.track-box{background:var(--bg2);border:1px solid var(--border);width:100%;max-width:400px}
+.track-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.track-item:last-child{border-bottom:none}
+.track-check{width:16px;height:16px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;transition:all .12s}
+.track-check.on{border-color:var(--green);background:rgba(0,229,160,.15);color:var(--green)}
+.track-label{font-family:var(--mono);font-size:9px;color:var(--text)}
+.track-sub{font-family:var(--mono);font-size:8px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -481,6 +517,17 @@ tr:hover td{background:var(--bg3)}
         </div>
       </div>
 
+      <!-- Strategy -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="ann-section-label" style="margin-bottom:0">Strategy (เลือกได้หลายอัน)</div>
+          <button class="tl-btn" onclick="openStratLib()" style="font-size:8px">⚙ Manage</button>
+        </div>
+        <div class="npt-tf-row" id="nptStratChips">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted)">Loading strategies...</div>
+        </div>
+      </div>
+
       <!-- Hypothesis -->
       <div>
         <div class="ann-section-label">Hypothesis — Why this trade?</div>
@@ -491,6 +538,77 @@ tr:hover td{background:var(--bg3)}
     <div class="ann-footer">
       <button class="ann-cancel" onclick="closeNewPT()">Cancel</button>
       <button class="ann-save" onclick="saveNewPT()">Open Paper Trade</button>
+    </div>
+  </div>
+</div>
+
+<!-- STRATEGY LIBRARY MODAL -->
+<div id="stratModal">
+  <div class="strat-box">
+    <div class="ann-hdr">
+      <div class="ann-hdr-title">Strategy Library</div>
+      <button class="modal-close" onclick="closeStratLib()">✕</button>
+    </div>
+    <div class="ann-body">
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+        <div class="ann-input-row">
+          <span class="ann-input-label">Name</span>
+          <input class="ann-input" id="strat-name" placeholder="e.g. DWR at Lower BB">
+        </div>
+        <div class="ann-input-row">
+          <span class="ann-input-label">Description</span>
+          <input class="ann-input" id="strat-desc" placeholder="Rules / conditions...">
+        </div>
+        <div class="ann-input-row">
+          <span class="ann-input-label">Default TF</span>
+          <input class="ann-input" id="strat-tf" placeholder="e.g. M15" style="width:80px">
+        </div>
+      </div>
+      <button class="ann-save" style="width:100%;margin-bottom:14px" onclick="saveStrategy()">+ Add Strategy</button>
+      <div class="ann-section-label">Saved Strategies</div>
+      <div id="stratList"></div>
+    </div>
+    <div class="ann-footer">
+      <button class="ann-cancel" onclick="closeStratLib()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRACK CHECKLIST MODAL -->
+<div id="trackModal">
+  <div class="track-box">
+    <div class="ann-hdr">
+      <div class="ann-hdr-title">Track Timeline Events</div>
+      <button class="modal-close" onclick="closeTrackModal()">✕</button>
+    </div>
+    <div class="ann-body" id="trackChecklist"></div>
+    <div class="ann-footer">
+      <button class="ann-cancel" onclick="closeTrackModal()">Cancel</button>
+      <button class="ann-save" onclick="confirmTrackAndOpen()">Start Tracking →</button>
+    </div>
+  </div>
+</div>
+
+<!-- TIMELINE EVENT MODAL -->
+<div id="tlEventModal">
+  <div class="tle-box">
+    <div class="ann-hdr">
+      <div class="ann-hdr-title" id="tleTitle">Add Event</div>
+      <button class="modal-close" onclick="closeTLEvent()">✕</button>
+    </div>
+    <div class="ann-body">
+      <div id="tlePriceRow" style="display:none">
+        <div class="ann-section-label" id="tlePriceLabel">Price</div>
+        <input class="ann-input" id="tlePrice" type="number" step="0.01" placeholder="Price...">
+      </div>
+      <div style="margin-top:8px">
+        <div class="ann-section-label">Note (optional)</div>
+        <textarea class="ann-input" id="tleNote" rows="2" placeholder="จดอะไรก็ได้..."></textarea>
+      </div>
+    </div>
+    <div class="ann-footer">
+      <button class="ann-cancel" onclick="closeTLEvent()">Cancel</button>
+      <button class="ann-save" onclick="saveTLEvent()">Save</button>
     </div>
   </div>
 </div>
@@ -1542,6 +1660,206 @@ function getCommissionLabel(symbol) {
   return `$${c.perSide}/side/0.01lot · $${(c.perSide*2).toFixed(2)} round trip`;
 }
 
+// ── STRATEGY LIBRARY ──
+const STRAT_KEY = 'cr_strategies';
+const DEFAULT_STRATEGIES = [
+  { id:'s1', name:'DWR',          desc:'Double Wick Rejection at key level', tf:'M15' },
+  { id:'s2', name:'ORB',          desc:'Opening Range Breakout',              tf:'M15' },
+  { id:'s3', name:'HTF Pullback', desc:'Higher TF trend + LTF pullback entry',tf:'H1'  },
+  { id:'s4', name:'BB Reversal',  desc:'Price at outer Bollinger Band',        tf:'M15' },
+  { id:'s5', name:'Key Level',    desc:'Strong S/R level rejection',           tf:'H1'  },
+  { id:'s6', name:'EMA Bounce',   desc:'Price bounce off EMA stack',           tf:'M15' },
+  { id:'s7', name:'Engulfing',    desc:'Engulfing candle at structure',        tf:'M15' },
+  { id:'s8', name:'MACD Signal',  desc:'MACD crossover with trend',            tf:'H1'  },
+];
+
+function getAllStrats() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STRAT_KEY)||'null');
+    return saved || DEFAULT_STRATEGIES;
+  } catch(e) { return DEFAULT_STRATEGIES; }
+}
+function saveAllStrats(strats) { localStorage.setItem(STRAT_KEY, JSON.stringify(strats)); }
+
+function openStratLib() {
+  renderStratList();
+  document.getElementById('strat-name').value = '';
+  document.getElementById('strat-desc').value = '';
+  document.getElementById('strat-tf').value   = '';
+  document.getElementById('stratModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeStratLib() {
+  document.getElementById('stratModal').classList.remove('open');
+  document.body.style.overflow = '';
+  renderNptStratChips(); // refresh chips in paper trade modal
+}
+
+function saveStrategy() {
+  const name = document.getElementById('strat-name').value.trim();
+  if(!name) return alert('กรอกชื่อ Strategy ก่อนครับ');
+  const strats = getAllStrats();
+  strats.push({
+    id: 'sc_'+Date.now(),
+    name,
+    desc: document.getElementById('strat-desc').value.trim(),
+    tf:   document.getElementById('strat-tf').value.trim(),
+  });
+  saveAllStrats(strats);
+  document.getElementById('strat-name').value = '';
+  document.getElementById('strat-desc').value = '';
+  document.getElementById('strat-tf').value   = '';
+  renderStratList();
+}
+
+function deleteStrategy(id) {
+  if(!confirm('Delete this strategy?')) return;
+  saveAllStrats(getAllStrats().filter(s=>s.id!==id));
+  renderStratList();
+}
+
+function renderStratList() {
+  const strats = getAllStrats();
+  document.getElementById('stratList').innerHTML = strats.length
+    ? strats.map(s=>`
+        <div class="strat-item">
+          <div style="flex:1">
+            <div class="strat-item-name">${s.name}${s.tf?` <span style="color:var(--muted);font-weight:400">· ${s.tf}</span>`:''}</div>
+            ${s.desc?`<div class="strat-item-desc">${s.desc}</div>`:''}
+          </div>
+          <div class="strat-item-actions">
+            <button class="tl-btn" onclick="deleteStrategy('${s.id}')" style="color:var(--red);border-color:var(--red)">✕</button>
+          </div>
+        </div>`).join('')
+    : '<div style="font-family:var(--mono);font-size:9px;color:var(--muted)">No strategies yet</div>';
+}
+
+function renderNptStratChips() {
+  const strats  = getAllStrats();
+  const el      = document.getElementById('nptStratChips');
+  if(!el) return;
+  el.innerHTML  = strats.map(s=>
+    `<div class="npt-tf-btn" data-group="npt-strat" data-val="${s.name}"
+          onclick="toggleStratChip(this)" title="${s.desc||''}">${s.name}</div>`
+  ).join('') +
+  `<button class="tl-btn" onclick="openStratLib()" style="padding:4px 8px">+ New</button>`;
+}
+
+function toggleStratChip(el) {
+  el.classList.toggle('active');
+}
+
+function getSelectedStrats() {
+  return [...document.querySelectorAll('[data-group="npt-strat"].active')].map(c=>c.dataset.val);
+}
+
+// ── TRACK CHECKLIST ──
+const TRACK_EVENTS = [
+  { id:'setup',   icon:'📍', label:'Setup Spotted',    sub:'บันทึกเวลาที่เห็น setup ก่อนเปิด order' },
+  { id:'open',    icon:'📂', label:'Trade Opened',      sub:'Auto — บันทึกเมื่อกด Open Trade'        },
+  { id:'note',    icon:'📝', label:'Add Notes',         sub:'พิมพ์ note ระหว่าง trade ได้'            },
+  { id:'sl_move', icon:'↕',  label:'SL Moves',          sub:'บันทึกทุกครั้งที่ขยับ SL'               },
+  { id:'peak',    icon:'📈', label:'Peak Price',        sub:'บันทึกราคา peak ระหว่าง trade'           },
+  { id:'partial', icon:'½',  label:'Partial Close',     sub:'บันทึกเมื่อ close บางส่วน'               },
+  { id:'close',   icon:'🔒', label:'Trade Closed',      sub:'Auto — บันทึกเมื่อกด Close Trade'        },
+];
+
+let trackSettings = {};
+let pendingPTData  = null;
+
+function openTrackModal(ptData) {
+  pendingPTData = ptData;
+  // Default all on
+  TRACK_EVENTS.forEach(e=>{ trackSettings[e.id] = true; });
+  document.getElementById('trackChecklist').innerHTML = TRACK_EVENTS.map(e=>`
+    <div class="track-item" onclick="toggleTrack('${e.id}')">
+      <div class="track-check on" id="tck_${e.id}">✓</div>
+      <div>
+        <div class="track-label">${e.icon} ${e.label}</div>
+        <div class="track-sub">${e.sub}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('trackModal').classList.add('open');
+}
+function closeTrackModal() {
+  document.getElementById('trackModal').classList.remove('open');
+  pendingPTData = null;
+}
+function toggleTrack(id) {
+  trackSettings[id] = !trackSettings[id];
+  const el = document.getElementById('tck_'+id);
+  el.classList.toggle('on', trackSettings[id]);
+  el.textContent = trackSettings[id] ? '✓' : '';
+}
+function confirmTrackAndOpen() {
+  if(!pendingPTData) return;
+  const id   = pendingPTData.id;
+  const data = {
+    ...pendingPTData,
+    trackSettings: {...trackSettings},
+    timeline: [{
+      type:'open', icon:'📂',
+      text:`Trade opened · ${pendingPTData.dir.toUpperCase()} ${pendingPTData.symbol} @ ${pendingPTData.entry}`,
+      time: new Date().toISOString()
+    }]
+  };
+  savePT(id, data);
+  closeTrackModal();
+  renderPaperTrades();
+}
+
+// ── TIMELINE EVENT ──
+let tleCurrentPTID = null;
+let tleEventType   = null;
+
+function openTLEvent(ptID, eventType) {
+  tleCurrentPTID = ptID;
+  tleEventType   = eventType;
+  const priceEvents = { sl_move:'New SL Price', peak:'Peak Price', partial:'Close Price' };
+  const titles = { setup:'📍 Mark Setup Spotted', note:'📝 Add Note', sl_move:'↕ SL Move', peak:'📈 Peak Price', partial:'½ Partial Close' };
+  document.getElementById('tleTitle').textContent    = titles[eventType]||'Add Event';
+  document.getElementById('tlePrice').value          = '';
+  document.getElementById('tleNote').value           = '';
+  document.getElementById('tlePriceLabel').textContent = priceEvents[eventType]||'Price';
+  document.getElementById('tlePriceRow').style.display = priceEvents[eventType] ? 'block' : 'none';
+  document.getElementById('tlEventModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeTLEvent() {
+  document.getElementById('tlEventModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function saveTLEvent() {
+  const t     = getAllPT().find(p=>p.id===tleCurrentPTID);
+  if(!t) return;
+  const price = parseFloat(document.getElementById('tlePrice').value)||0;
+  const note  = document.getElementById('tleNote').value.trim();
+  const icons = { setup:'📍', note:'📝', sl_move:'↕', peak:'📈', partial:'½' };
+  const texts = {
+    setup:   'Setup spotted' + (note?` · ${note}`:''),
+    note:    note||'Note',
+    sl_move: price?`SL moved to ${price}`:'SL moved' + (note?` · ${note}`:''),
+    peak:    price?`Peak noted: ${price}`:'Peak noted' + (note?` · ${note}`:''),
+    partial: price?`Partial close @ ${price}`:'Partial close' + (note?` · ${note}`:''),
+  };
+  const event = {
+    type: tleEventType,
+    icon: icons[tleEventType]||'•',
+    text: texts[tleEventType]||note,
+    price: price||null,
+    time:  new Date().toISOString(),
+  };
+  const timeline = [...(t.timeline||[]), event];
+  savePT(tleCurrentPTID, {...t, timeline});
+  closeTLEvent();
+  renderPaperTrades();
+}
+
+function fmtTLTime(iso) {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
 // ── MAIN TAB SWITCH ──
 function switchMainTab(tab) {
   document.getElementById('nav-live').classList.toggle('active', tab==='live');
@@ -1600,6 +1918,7 @@ function openNewPT() {
   document.getElementById('nptRRDisplay').textContent    = '';
   document.getElementById('nptLotCalcInfo').textContent  = '';
   switchLotMode('manual');
+  renderNptStratChips(); // load strategy chips
   document.getElementById('newPTModal').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -1766,22 +2085,22 @@ function saveNewPT() {
   const sym   = document.querySelector('[data-group="npt-sym"].active')?.dataset.val ||
                 document.getElementById('npt-sym-custom').value.toUpperCase().trim();
   if(!sym) return alert('เลือก Symbol ก่อนครับ');
-  const tf    = document.querySelector('[data-group="npt-tf"].active')?.dataset.val||'';
-  const setup = document.querySelector('[data-group="npt-setup"].active')?.dataset.val||'Custom';
-  const entry = parseFloat(document.getElementById('npt-entry').value);
-  const sl    = parseFloat(document.getElementById('npt-sl').value);
-  const tp    = parseFloat(document.getElementById('npt-tp').value);
-  const lot   = parseFloat(document.getElementById('npt-lot').value)||0.01;
-  const hypo  = document.getElementById('npt-hypo').value.trim();
+  const tf     = document.querySelector('[data-group="npt-tf"].active')?.dataset.val||'';
+  const strats = getSelectedStrats();
+  const entry  = parseFloat(document.getElementById('npt-entry').value);
+  const sl     = parseFloat(document.getElementById('npt-sl').value);
+  const tp     = parseFloat(document.getElementById('npt-tp').value);
+  const lot    = parseFloat(document.getElementById('npt-lot').value)||0.01;
+  const hypo   = document.getElementById('npt-hypo').value.trim();
   if(!entry||!sl||!tp) return alert('กรอก Entry / SL / TP ก่อนครับ');
   const slDist = Math.abs(entry-sl);
   const tpDist = Math.abs(tp-entry);
   const rr     = slDist>0 ? (tpDist/slDist).toFixed(2) : '0';
   const comm   = calcCommission(sym, lot);
   const id     = 'pt_'+Date.now();
-  savePT(id,{id,symbol:sym,dir:nptDir,timeframe:tf,entry,sl,tp,lot,setup,hypo,rr,commission:comm,status:'open',openTime:new Date().toISOString()});
+  const ptData = {id,symbol:sym,dir:nptDir,timeframe:tf,strategies:strats,entry,sl,tp,lot,hypo,rr,commission:comm,status:'open',openTime:new Date().toISOString()};
   closeNewPT();
-  renderPaperTrades();
+  openTrackModal(ptData); // → show checklist before saving
 }
 
 // ── RENDER PAPER TRADES ──
@@ -1835,22 +2154,51 @@ function ptCard(t) {
   const pnlCol  = !isOpen ? (t.netPnl>=0?'var(--green)':'var(--red)') : 'var(--muted)';
   const pnlStr  = !isOpen ? `${t.netPnl>=0?'+':''}$${t.netPnl.toFixed(2)} net` : 'Open';
   const cardCls = isOpen ? 'open' : (t.netPnl>0?'win':t.netPnl===0?'be':'loss');
-  const slDist  = Math.abs(t.entry - t.sl);
+
+  // Strategies badges
+  const stratBadges = (t.strategies||[]).map(s=>
+    `<span style="font-family:var(--mono);font-size:8px;padding:1px 6px;border:1px solid var(--blue);color:var(--blue);margin-right:3px">${s}</span>`
+  ).join('');
+
+  // Timeline
+  const tl = t.timeline||[];
+  const tlHTML = tl.length ? `
+    <div class="tl-wrap">
+      <div class="tl-title">Timeline</div>
+      ${tl.map(ev=>`
+        <div class="tl-event">
+          <span class="tl-time">${fmtTLTime(ev.time)}</span>
+          <span class="tl-icon">${ev.icon}</span>
+          <span class="tl-text">${ev.text}</span>
+        </div>`).join('')}
+    </div>` : '';
+
+  // Timeline action buttons (only for open trades)
+  const ts = t.trackSettings||{};
+  const tlBtns = isOpen ? `
+    <div class="tl-actions">
+      ${ts.setup   !==false?`<button class="tl-btn" onclick="openTLEvent('${t.id}','setup')">📍 Setup</button>`:''}
+      ${ts.note    !==false?`<button class="tl-btn" onclick="openTLEvent('${t.id}','note')">📝 Note</button>`:''}
+      ${ts.sl_move !==false?`<button class="tl-btn" onclick="openTLEvent('${t.id}','sl_move')">↕ SL</button>`:''}
+      ${ts.peak    !==false?`<button class="tl-btn" onclick="openTLEvent('${t.id}','peak')">📈 Peak</button>`:''}
+      ${ts.partial !==false?`<button class="tl-btn" onclick="openTLEvent('${t.id}','partial')">½ Partial</button>`:''}
+    </div>` : '';
+
   return `<div class="pt-card ${cardCls}">
     <div class="pt-hdr">
-      <div class="pt-title" style="color:${dirCol}">${t.dir.toUpperCase()} ${t.symbol}</div>
+      <div class="pt-title" style="color:${dirCol}">${t.dir.toUpperCase()} ${t.symbol}${t.timeframe?' · '+t.timeframe:''}</div>
       <div class="pt-badge ${isOpen?'open':'closed'}">${isOpen?'OPEN':'CLOSED'}</div>
     </div>
-    <div class="pt-row"><span>Setup</span><span>${t.setup||'-'}${t.timeframe?' · '+t.timeframe:''}</span></div>
-    <div class="pt-row"><span>Entry</span><span>${t.entry}</span></div>
-    <div class="pt-row"><span>SL / TP</span><span>${t.sl} / ${t.tp}</span></div>
-    <div class="pt-row"><span>RR</span><span>1:${t.rr}</span></div>
-    <div class="pt-row"><span>Lot</span><span>${t.lot}</span></div>
+    ${stratBadges?`<div style="margin-bottom:6px">${stratBadges}</div>`:''}
+    <div class="pt-row"><span>Entry / SL / TP</span><span>${t.entry} / ${t.sl} / ${t.tp}</span></div>
+    <div class="pt-row"><span>RR / Lot</span><span>1:${t.rr} · ${t.lot}</span></div>
     <div class="pt-row"><span>Commission</span><span style="color:var(--red)">-$${(t.commission||0).toFixed(2)}</span></div>
     <div class="pt-row"><span>P&L</span><span style="color:${pnlCol};font-weight:700">${pnlStr}</span></div>
-    ${t.hypo?`<div style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:6px;border-top:1px solid var(--border);padding-top:6px">${t.hypo}</div>`:''}
+    ${t.hypo?`<div style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:6px;border-top:1px solid var(--border);padding-top:6px">💭 ${t.hypo}</div>`:''}
     ${!isOpen&&t.lessons?`<div style="font-family:var(--mono);font-size:8px;color:var(--blue);margin-top:4px">💡 ${t.lessons}</div>`:''}
-    <div class="pt-actions">
+    ${tlBtns}
+    ${tlHTML}
+    <div class="pt-actions" style="margin-top:8px">
       ${isOpen?`<button class="pt-btn close" onclick="openClosePT('${t.id}')">Close Trade</button>`:''}
       <button class="pt-btn del" onclick="if(confirm('Delete?')){deletePT('${t.id}');renderPaperTrades()}">Delete</button>
     </div>
