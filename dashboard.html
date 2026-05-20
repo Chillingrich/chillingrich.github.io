@@ -391,28 +391,75 @@ tr:hover td{background:var(--bg3)}
         </div>
       </div>
 
-      <!-- Entry / SL / TP -->
+      <!-- Entry / SL / TP / RR -->
       <div>
         <div class="ann-section-label">Price Levels</div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <div class="ann-input-row">
             <span class="ann-input-label">Entry</span>
-            <input class="ann-input" id="npt-entry" type="number" step="0.01" placeholder="Entry price" oninput="updateNptRR()">
+            <input class="ann-input" id="npt-entry" type="number" step="0.01" placeholder="Entry price" oninput="onNptPriceChange('entry')">
           </div>
           <div class="ann-input-row">
             <span class="ann-input-label">Stop Loss</span>
-            <input class="ann-input" id="npt-sl" type="number" step="0.01" placeholder="SL price" oninput="updateNptRR()">
+            <input class="ann-input" id="npt-sl" type="number" step="0.01" placeholder="SL price" oninput="onNptPriceChange('sl')">
+          </div>
+          <div class="ann-input-row" style="align-items:center">
+            <span class="ann-input-label">Target RR</span>
+            <div style="display:flex;gap:4px;flex:1;flex-wrap:wrap">
+              <div class="npt-tf-btn" data-group="npt-rr" data-val="1"   onclick="selectRR(this)">1R</div>
+              <div class="npt-tf-btn" data-group="npt-rr" data-val="1.5" onclick="selectRR(this)">1.5R</div>
+              <div class="npt-tf-btn npt-tf-btn active" data-group="npt-rr" data-val="2" id="npt-rr-2" onclick="selectRR(this)">2R</div>
+              <div class="npt-tf-btn" data-group="npt-rr" data-val="2.5" onclick="selectRR(this)">2.5R</div>
+              <div class="npt-tf-btn" data-group="npt-rr" data-val="3"   onclick="selectRR(this)">3R</div>
+              <div class="npt-tf-btn" data-group="npt-rr" data-val="4"   onclick="selectRR(this)">4R</div>
+            </div>
           </div>
           <div class="ann-input-row">
             <span class="ann-input-label">Take Profit</span>
-            <input class="ann-input" id="npt-tp" type="number" step="0.01" placeholder="TP price" oninput="updateNptRR()">
-          </div>
-          <div class="ann-input-row">
-            <span class="ann-input-label">Lot Size</span>
-            <input class="ann-input" id="npt-lot" type="number" step="0.01" value="0.01" placeholder="0.01" oninput="updateNptRR()">
+            <input class="ann-input" id="npt-tp" type="number" step="0.01" placeholder="Auto-calculated" oninput="onNptPriceChange('tp')">
           </div>
         </div>
         <div class="npt-rr-display" id="nptRRDisplay"></div>
+      </div>
+
+      <!-- Lot Size Calculator -->
+      <div>
+        <div class="ann-section-label">Lot Size</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button class="npt-tf-btn" id="lot-mode-fixed" onclick="switchLotMode('fixed')" style="flex:1">Risk $</button>
+          <button class="npt-tf-btn" id="lot-mode-pct" onclick="switchLotMode('pct')" style="flex:1">Risk %</button>
+          <button class="npt-tf-btn active" id="lot-mode-manual" onclick="switchLotMode('manual')" style="flex:1">Manual</button>
+        </div>
+
+        <!-- Risk $ mode -->
+        <div id="lot-fixed-inputs" style="display:none">
+          <div class="ann-input-row">
+            <span class="ann-input-label">Risk Amount</span>
+            <input class="ann-input" id="npt-risk-dollar" type="number" step="1" placeholder="e.g. 10" oninput="calcLotFromRisk()">
+            <span style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-left:6px">USD</span>
+          </div>
+        </div>
+
+        <!-- Risk % mode -->
+        <div id="lot-pct-inputs" style="display:none;flex-direction:column;gap:6px">
+          <div class="ann-input-row">
+            <span class="ann-input-label">Balance</span>
+            <input class="ann-input" id="npt-balance" type="number" step="100" placeholder="e.g. 500" oninput="calcLotFromRisk()">
+            <span style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-left:6px">USD</span>
+          </div>
+          <div class="ann-input-row">
+            <span class="ann-input-label">Risk %</span>
+            <input class="ann-input" id="npt-risk-pct" type="number" step="0.1" placeholder="e.g. 1" value="1" oninput="calcLotFromRisk()">
+            <span style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-left:6px">%</span>
+          </div>
+        </div>
+
+        <!-- Lot result (always shown) -->
+        <div class="ann-input-row" style="margin-top:6px">
+          <span class="ann-input-label">Lot Size</span>
+          <input class="ann-input" id="npt-lot" type="number" step="0.01" value="0.01" placeholder="0.01" oninput="updateNptSummary()">
+        </div>
+        <div id="nptLotCalcInfo" style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:4px;min-height:14px"></div>
       </div>
 
       <!-- Setup -->
@@ -1479,19 +1526,33 @@ function deletePT(id) {
 }
 
 // ── NEW PAPER TRADE MODAL ──
-let nptDir = '';
+let nptDir        = '';
+let nptTargetRR   = 2;      // default 2R
+let nptLotMode    = 'manual';
+let nptTPManual   = false;  // true = user typed TP manually
 
 function openNewPT() {
-  nptDir = '';
+  nptDir      = '';
+  nptTargetRR = 2;
+  nptLotMode  = 'manual';
+  nptTPManual = false;
+
   document.getElementById('npt-buy').classList.remove('active');
   document.getElementById('npt-sell').classList.remove('active');
   document.querySelectorAll('[data-group^="npt-"]').forEach(c=>c.classList.remove('active'));
-  ['npt-entry','npt-sl','npt-tp','npt-sym-custom','npt-hypo'].forEach(id=>{
+
+  // Default RR = 2R
+  document.getElementById('npt-rr-2').classList.add('active');
+
+  ['npt-entry','npt-sl','npt-tp','npt-sym-custom','npt-hypo','npt-risk-dollar','npt-balance'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.value = '';
   });
-  document.getElementById('npt-lot').value = '0.01';
-  document.getElementById('nptRRDisplay').textContent = '';
+  document.getElementById('npt-lot').value       = '0.01';
+  document.getElementById('npt-risk-pct').value  = '1';
+  document.getElementById('nptRRDisplay').textContent    = '';
+  document.getElementById('nptLotCalcInfo').textContent  = '';
+  switchLotMode('manual');
   document.getElementById('newPTModal').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -1505,38 +1566,137 @@ function selectDir(dir) {
   nptDir = dir;
   document.getElementById('npt-buy').classList.toggle('active',  dir==='buy');
   document.getElementById('npt-sell').classList.toggle('active', dir==='sell');
-  updateNptRR();
+  onNptPriceChange('dir');
 }
 
 function selectNptChip(el, group) {
   document.querySelectorAll(`[data-group="${group}"]`).forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
   if(group==='npt-sym') document.getElementById('npt-sym-custom').value = '';
-  updateNptRR();
+  updateNptSummary();
 }
 
 function clearNptChip(group) {
   document.querySelectorAll(`[data-group="${group}"]`).forEach(c=>c.classList.remove('active'));
 }
 
-function updateNptRR() {
+function selectRR(el) {
+  document.querySelectorAll('[data-group="npt-rr"]').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  nptTargetRR  = parseFloat(el.dataset.val);
+  nptTPManual  = false;
+  calcTPFromRR();
+}
+
+function switchLotMode(mode) {
+  nptLotMode = mode;
+  ['fixed','pct','manual'].forEach(m=>{
+    document.getElementById(`lot-mode-${m}`).classList.toggle('active', m===mode);
+  });
+  document.getElementById('lot-fixed-inputs').style.display = mode==='fixed'  ? 'flex'   : 'none';
+  document.getElementById('lot-pct-inputs').style.display   = mode==='pct'    ? 'flex'   : 'none';
+  document.getElementById('npt-lot').readOnly                = mode!=='manual';
+  document.getElementById('npt-lot').style.opacity           = mode==='manual' ? '1'      : '0.6';
+  if(mode!=='manual') calcLotFromRisk();
+}
+
+// ── REACTIVE PRICE CHANGE ──
+function onNptPriceChange(source) {
+  if(source==='tp') {
+    // User manually typed TP → recalc RR from it, don't override TP
+    nptTPManual = true;
+    const entry = parseFloat(document.getElementById('npt-entry').value)||0;
+    const sl    = parseFloat(document.getElementById('npt-sl').value)||0;
+    const tp    = parseFloat(document.getElementById('npt-tp').value)||0;
+    if(entry && sl && tp) {
+      const slDist = Math.abs(entry-sl);
+      const tpDist = Math.abs(tp-entry);
+      nptTargetRR  = slDist>0 ? parseFloat((tpDist/slDist).toFixed(2)) : nptTargetRR;
+      // Highlight closest RR button
+      document.querySelectorAll('[data-group="npt-rr"]').forEach(c=>c.classList.remove('active'));
+    }
+  } else {
+    // Entry or SL changed → recalc TP from target RR
+    nptTPManual = false;
+    calcTPFromRR();
+  }
+  if(nptLotMode!=='manual') calcLotFromRisk();
+  updateNptSummary();
+}
+
+function calcTPFromRR() {
   const entry = parseFloat(document.getElementById('npt-entry').value)||0;
   const sl    = parseFloat(document.getElementById('npt-sl').value)||0;
-  const tp    = parseFloat(document.getElementById('npt-tp').value)||0;
-  const lot   = parseFloat(document.getElementById('npt-lot').value)||0.01;
-  const sym   = document.querySelector('[data-group="npt-sym"].active')?.dataset.val ||
-                document.getElementById('npt-sym-custom').value.toUpperCase() || 'XAUUSD';
-  const el    = document.getElementById('nptRRDisplay');
-  if(!entry || !sl || !tp) { el.textContent=''; return; }
-  const slDist = Math.abs(entry - sl);
-  const tpDist = Math.abs(tp - entry);
-  const rr     = slDist>0 ? (tpDist/slDist).toFixed(2) : '?';
-  const comm   = calcCommission(sym, lot);
+  if(!entry || !sl) return;
+  const slDist = Math.abs(entry-sl);
+  const dir    = (nptDir==='sell') ? -1 : 1;
+  const tp     = parseFloat((entry + dir * slDist * nptTargetRR).toFixed(2));
+  document.getElementById('npt-tp').value = tp;
+}
+
+function calcLotFromRisk() {
+  const entry = parseFloat(document.getElementById('npt-entry').value)||0;
+  const sl    = parseFloat(document.getElementById('npt-sl').value)||0;
+  if(!entry||!sl) { document.getElementById('nptLotCalcInfo').textContent='กรอก Entry + SL ก่อน'; return; }
+
+  const slDist = Math.abs(entry-sl);
+  const sym    = document.querySelector('[data-group="npt-sym"].active')?.dataset.val ||
+                 document.getElementById('npt-sym-custom').value.toUpperCase()||'XAUUSD';
+
+  // pip value per 0.01 lot for XAUUSD ≈ $0.01 per point → $1 per pip per 0.01 lot
+  // For gold: 1 point = $0.01 per 0.01 lot → $1 per 1 price unit per 0.01 lot
+  const pipValPer001 = sym.includes('JPY') ? 0.1 : 1.0; // approx $1/unit/0.01lot for XAUUSD
+
+  let riskDollar = 0;
+  if(nptLotMode==='fixed') {
+    riskDollar = parseFloat(document.getElementById('npt-risk-dollar').value)||0;
+  } else if(nptLotMode==='pct') {
+    const bal = parseFloat(document.getElementById('npt-balance').value)||0;
+    const pct = parseFloat(document.getElementById('npt-risk-pct').value)||1;
+    riskDollar = bal * pct / 100;
+  }
+  if(!riskDollar) return;
+
+  // lot = riskDollar / (slDist * pipValPer001 / 0.01)
+  const lotRaw  = riskDollar / (slDist * pipValPer001 / 0.01);
+  const lot     = Math.floor(lotRaw / 0.01) * 0.01; // round down to nearest 0.01
+  const lotSafe = Math.max(0.01, parseFloat(lot.toFixed(2)));
+
+  document.getElementById('npt-lot').value = lotSafe;
+  document.getElementById('nptLotCalcInfo').textContent =
+    `Risk $${riskDollar.toFixed(2)} · SL ${slDist.toFixed(2)} pts · Lot = ${lotSafe}`;
+  updateNptSummary();
+}
+
+function updateNptSummary() {
+  const entry  = parseFloat(document.getElementById('npt-entry').value)||0;
+  const sl     = parseFloat(document.getElementById('npt-sl').value)||0;
+  const tp     = parseFloat(document.getElementById('npt-tp').value)||0;
+  const lot    = parseFloat(document.getElementById('npt-lot').value)||0.01;
+  const sym    = document.querySelector('[data-group="npt-sym"].active')?.dataset.val ||
+                 document.getElementById('npt-sym-custom').value.toUpperCase()||'XAUUSD';
+  const el     = document.getElementById('nptRRDisplay');
+  if(!entry||!sl) { el.textContent=''; return; }
+
+  const slDist = Math.abs(entry-sl);
   const dir    = nptDir==='sell' ? -1 : 1;
-  const grossTP = (tp - entry) * dir * lot * 100;
-  const netTP   = grossTP - comm;
-  const col     = rr>=2?'var(--green)':rr>=1?'var(--xau)':'var(--red)';
-  el.innerHTML  = `RR <span style="color:${col};font-weight:700">1:${rr}</span> &nbsp;|&nbsp; TP Gross <span style="color:var(--green)">+$${grossTP.toFixed(2)}</span> &nbsp;|&nbsp; Commission <span style="color:var(--red)">-$${comm.toFixed(2)}</span> &nbsp;|&nbsp; Net <span style="color:var(--green)">+$${netTP.toFixed(2)}</span>`;
+  const comm   = calcCommission(sym, lot);
+
+  let html = '';
+  if(sl) {
+    const slPips = slDist.toFixed(2);
+    const slRisk = slDist * lot * 100;
+    html += `SL dist <b>${slPips} pts</b> · Risk <span style="color:var(--red)">-$${slRisk.toFixed(2)}</span> · Comm <span style="color:var(--red)">-$${comm.toFixed(2)}</span>`;
+  }
+  if(tp) {
+    const tpDist = Math.abs(tp-entry);
+    const rr     = slDist>0 ? (tpDist/slDist).toFixed(2) : '?';
+    const gross  = tpDist * lot * 100;
+    const net    = gross - comm;
+    const col    = parseFloat(rr)>=2?'var(--green)':parseFloat(rr)>=1?'var(--xau)':'var(--red)';
+    html += `<br>RR <b style="color:${col}">1:${rr}</b> · TP Gross <span style="color:var(--green)">+$${gross.toFixed(2)}</span> · Net <b style="color:var(--green)">+$${net.toFixed(2)}</b>`;
+  }
+  el.innerHTML = html;
 }
 
 function saveNewPT() {
@@ -1544,8 +1704,8 @@ function saveNewPT() {
   const sym   = document.querySelector('[data-group="npt-sym"].active')?.dataset.val ||
                 document.getElementById('npt-sym-custom').value.toUpperCase().trim();
   if(!sym) return alert('เลือก Symbol ก่อนครับ');
-  const tf    = document.querySelector('[data-group="npt-tf"].active')?.dataset.val || '';
-  const setup = document.querySelector('[data-group="npt-setup"].active')?.dataset.val || 'Custom';
+  const tf    = document.querySelector('[data-group="npt-tf"].active')?.dataset.val||'';
+  const setup = document.querySelector('[data-group="npt-setup"].active')?.dataset.val||'Custom';
   const entry = parseFloat(document.getElementById('npt-entry').value);
   const sl    = parseFloat(document.getElementById('npt-sl').value);
   const tp    = parseFloat(document.getElementById('npt-tp').value);
