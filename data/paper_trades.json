@@ -1,0 +1,192 @@
+{
+  "generated": "2026-05-20T15:09:02.355Z",
+  "trades": [
+    {
+      "id": "pt_1779252949184",
+      "symbol": "XAUUSD",
+      "dir": "sell",
+      "timeframe": "H1",
+      "strategies": [
+        "2Bars"
+      ],
+      "entry": 4500.87,
+      "sl": 4519.75,
+      "tp": 4463.11,
+      "lot": 0.02,
+      "hypo": "",
+      "rr": "2.00",
+      "commission": 0.32,
+      "status": "open",
+      "openTime": "2026-05-20T04:55:49.184Z",
+      "trackSettings": {
+        "setup": true,
+        "open": true,
+        "note": true,
+        "sl_move": true,
+        "peak": true,
+        "partial": true,
+        "close": true
+      },
+      "timeline": [
+        {
+          "type": "open",
+          "icon": "📂",
+          "text": "Trade opened · SELL XAUUSD @ 4500.87",
+          "time": "2026-05-20T04:56:11.467Z"
+        }
+      ]
+    },
+    {
+      "id": "pt_1779254944573",
+      "symbol": "XAUUSD",
+      "dir": "sell",
+      "timeframe": "H4",
+      "strategies": [
+        "2Bars"
+      ],
+      "entry": 4501.02,
+      "sl": 4529.41,
+      "tp": 4458.44,
+      "lot": 0.02,
+      "hypo": "Closest Double Bar, H4, D1 Down Trend",
+      "rr": "1.50",
+      "commission": 0.32,
+      "status": "open",
+      "openTime": "2026-05-20T05:29:04.573Z",
+      "trackSettings": {
+        "setup": true,
+        "open": true,
+        "note": true,
+        "sl_move": true,
+        "peak": true,
+        "partial": true,
+        "close": true
+      },
+      "timeline": [
+        {
+          "type": "open",
+          "icon": "📂",
+          "text": "Trade opened · SELL XAUUSD @ 4501.02",
+          "time": "2026-05-20T05:29:07.453Z"
+        }
+      ]
+    },
+    {
+      "id": "pt_1779255630375",
+      "symbol": "XAUUSD",
+      "dir": "buy",
+      "timeframe": "M5",
+      "strategies": [
+        "2Bars"
+      ],
+      "entry": 4468.39,
+      "sl": 4461.26,
+      "tp": 4482.65,
+      "lot": 0.02,
+      "hypo": "1st 2Bars",
+      "rr": "2.00",
+      "commission": 0.32,
+      "status": "open",
+      "openTime": "2026-05-20T05:40:30.375Z",
+      "trackSettings": {
+        "setup": true,
+        "open": true,
+        "note": true,
+        "sl_move": true,
+        "peak": true,
+        "partial": true,
+        "close": true
+      },
+      "timeline": [
+        {
+          "type": "open",
+          "icon": "📂",
+          "text": "Trade opened · BUY XAUUSD @ 4468.39",
+          "time": "2026-05-20T05:40:32.243Z"
+        }
+      ]
+    },
+    {
+      "id": "pt_1779255850891",
+      "symbol": "XAUUSD",
+      "dir": "sell",
+      "timeframe": "",
+      "strategies": [
+        "2Bars"
+      ],
+      "entry": 4481.55,
+      "sl": 4494.2,
+      "tp": 4456.25,
+      "lot": 0.03,
+      "hypo": "1st 2Bars",
+      "rr": "2.00",
+      "commission": 0.48,
+      "status": "open",
+      "openTime": "2026-05-20T05:44:10.891Z",
+      "trackSettings": {
+        "setup": true,
+        "open": true,
+        "note": true,
+        "sl_move": true,
+        "peak": true,
+        "partial": true,
+        "close": true
+      },
+      "timeline": [
+        {
+          "type": "open",
+          "icon": "📂",
+          "text": "Trade opened · SELL XAUUSD @ 4481.55",
+          "time": "2026-05-20T05:44:12.971Z"
+        }
+      ]
+    },
+    {
+      "id": "pt_1779256169383",
+      "symbol": "XAUUSD",
+      "dir": "sell",
+      "timeframe": "M15",
+      "strategies": [],
+      "entry": 4481.6,
+      "sl": 4495.41,
+      "tp": 4453.98,
+      "lot": 0.02,
+      "hypo": "",
+      "rr": "2.00",
+      "commission": 0.32,
+      "status": "open",
+      "openTime": "2026-05-20T05:49:29.383Z",
+      "trackSettings": {
+        "setup": true,
+        "open": true,
+        "note": true,
+        "sl_move": true,
+        "peak": true,
+        "partial": true,
+        "close": true
+      },
+      "timeline": [
+        {
+          "type": "open",
+          "icon": "📂",
+          "text": "Trade opened · SELL XAUUSD @ 4481.6",
+          "time": "2026-05-20T05:49:30.817Z"
+        },
+        {
+          "type": "setup",
+          "icon": "📍",
+          "text": "Setup spotted · ราคาขึ้น sell สวน",
+          "price": null,
+          "time": "2026-05-20T05:51:24.405Z"
+        },
+        {
+          "type": "setup",
+          "icon": "📍",
+          "text": "Setup spotted",
+          "price": null,
+          "time": "2026-05-20T05:53:50.954Z"
+        }
+      ]
+    }
+  ]
+}
