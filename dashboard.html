@@ -369,14 +369,20 @@ tr:hover td{background:var(--bg3)}
       <!-- Symbol & Timeframe -->
       <div>
         <div class="ann-section-label">Symbol</div>
-        <div class="npt-tf-row" style="margin-bottom:8px">
-          <div class="npt-tf-btn" data-group="npt-sym" data-val="XAUUSD" onclick="selectNptChip(this,'npt-sym')">XAUUSD</div>
-          <div class="npt-tf-btn" data-group="npt-sym" data-val="EURUSD" onclick="selectNptChip(this,'npt-sym')">EURUSD</div>
-          <div class="npt-tf-btn" data-group="npt-sym" data-val="GBPUSD" onclick="selectNptChip(this,'npt-sym')">GBPUSD</div>
-          <div class="npt-tf-btn" data-group="npt-sym" data-val="USDJPY" onclick="selectNptChip(this,'npt-sym')">USDJPY</div>
-          <div class="npt-tf-btn" data-group="npt-sym" data-val="BTCUSD" onclick="selectNptChip(this,'npt-sym')">BTCUSD</div>
-          <input class="ann-input" id="npt-sym-custom" placeholder="Other symbol..." style="font-size:9px;padding:4px 8px;width:120px" oninput="clearNptChip('npt-sym')">
+        <div class="npt-tf-row" style="margin-bottom:4px">
+          <div class="npt-tf-btn" data-group="npt-sym" data-val="XAUUSD" onclick="selectNptChip(this,'npt-sym')" title="Gold · $0.08/side">XAUUSD</div>
+          <div class="npt-tf-btn" data-group="npt-sym" data-val="EURUSD" onclick="selectNptChip(this,'npt-sym')" title="Euro/USD · $0.07/side">EURUSD</div>
+          <div class="npt-tf-btn" data-group="npt-sym" data-val="GBPUSD" onclick="selectNptChip(this,'npt-sym')" title="Cable · $0.07/side">GBPUSD</div>
+          <div class="npt-tf-btn" data-group="npt-sym" data-val="USDJPY" onclick="selectNptChip(this,'npt-sym')" title="Dollar/Yen · $0.07/side">USDJPY</div>
+          <div class="npt-tf-btn" data-group="npt-sym" data-val="GBPJPY" onclick="selectNptChip(this,'npt-sym')" title="GBP/Yen · $0.07/side">GBPJPY</div>
+          <div class="npt-tf-btn" data-group="npt-sym" data-val="AUDUSD" onclick="selectNptChip(this,'npt-sym')" title="Aussie · $0.07/side">AUDUSD</div>
+          <div class="npt-tf-btn" data-group="npt-sym" data-val="NAS100" onclick="selectNptChip(this,'npt-sym')" title="Nasdaq · Spread only">NAS100</div>
+          <div class="npt-tf-btn" data-group="npt-sym" data-val="US500"  onclick="selectNptChip(this,'npt-sym')" title="S&P 500 · Spread only">US500</div>
+          <div class="npt-tf-btn" data-group="npt-sym" data-val="BTCUSD" onclick="selectNptChip(this,'npt-sym')" title="Bitcoin · Spread only">BTCUSD</div>
+          <div class="npt-tf-btn" data-group="npt-sym" data-val="ETHUSD" onclick="selectNptChip(this,'npt-sym')" title="Ethereum · Spread only">ETHUSD</div>
+          <input class="ann-input" id="npt-sym-custom" placeholder="Other..." style="font-size:9px;padding:4px 8px;width:80px" oninput="clearNptChip('npt-sym');updateNptCommLabel()">
         </div>
+        <div id="nptCommLabel" style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-bottom:8px;min-height:14px"></div>
 
         <div class="ann-section-label">Timeframe</div>
         <div class="npt-tf-row">
@@ -1480,19 +1486,60 @@ function renderAnalytics(ts) {
   }, 50);
 }
 
-// ── COMMISSION RATES (hardcode v1 — Settings UI coming later) ──
+// ── COMMISSION RATES — IC Markets SC (per side, per 0.01 lot) ──
 const COMMISSION = {
-  'XAUUSD': { type:'commission', perSide: 0.08, lotUnit: 0.01 }, // $0.08 per side per 0.01 lot
-  'EURUSD': { type:'commission', perSide: 0.07, lotUnit: 0.01 },
-  'GBPUSD': { type:'commission', perSide: 0.07, lotUnit: 0.01 },
-  'USDJPY': { type:'commission', perSide: 0.07, lotUnit: 0.01 },
-  'BTCUSD': { type:'spread', perSide: 0, lotUnit: 0.01 },
-  'ETHUSD': { type:'spread', perSide: 0, lotUnit: 0.01 },
+  // Metals
+  'XAUUSD': { type:'commission', perSide:0.08,  lotUnit:0.01, desc:'Gold'          },
+  'XAGUSD': { type:'commission', perSide:0.05,  lotUnit:0.01, desc:'Silver'        },
+  'XPTUSD': { type:'commission', perSide:0.10,  lotUnit:0.01, desc:'Platinum'      },
+
+  // Major Forex
+  'EURUSD': { type:'commission', perSide:0.07,  lotUnit:0.01, desc:'Euro/USD'      },
+  'GBPUSD': { type:'commission', perSide:0.07,  lotUnit:0.01, desc:'Cable'         },
+  'USDJPY': { type:'commission', perSide:0.07,  lotUnit:0.01, desc:'Dollar/Yen'    },
+  'USDCHF': { type:'commission', perSide:0.07,  lotUnit:0.01, desc:'Swissy'        },
+  'AUDUSD': { type:'commission', perSide:0.07,  lotUnit:0.01, desc:'Aussie'        },
+  'NZDUSD': { type:'commission', perSide:0.07,  lotUnit:0.01, desc:'Kiwi'          },
+  'USDCAD': { type:'commission', perSide:0.07,  lotUnit:0.01, desc:'Loonie'        },
+
+  // Minor Forex
+  'EURGBP': { type:'commission', perSide:0.07,  lotUnit:0.01, desc:'Euro/Cable'    },
+  'EURJPY': { type:'commission', perSide:0.07,  lotUnit:0.01, desc:'Euro/Yen'      },
+  'GBPJPY': { type:'commission', perSide:0.07,  lotUnit:0.01, desc:'GBP/Yen'       },
+  'AUDJPY': { type:'commission', perSide:0.07,  lotUnit:0.01, desc:'AUD/Yen'       },
+  'GBPAUD': { type:'commission', perSide:0.07,  lotUnit:0.01, desc:'GBP/AUD'       },
+  'EURNZD': { type:'commission', perSide:0.07,  lotUnit:0.01, desc:'Euro/Kiwi'     },
+
+  // Indices (spread only on IC Markets)
+  'US30':   { type:'spread',     perSide:0,     lotUnit:0.01, desc:'Dow Jones'     },
+  'US500':  { type:'spread',     perSide:0,     lotUnit:0.01, desc:'S&P 500'       },
+  'NAS100': { type:'spread',     perSide:0,     lotUnit:0.01, desc:'Nasdaq'        },
+  'GER40':  { type:'spread',     perSide:0,     lotUnit:0.01, desc:'DAX'           },
+  'UK100':  { type:'spread',     perSide:0,     lotUnit:0.01, desc:'FTSE'          },
+
+  // Crypto (spread only)
+  'BTCUSD': { type:'spread',     perSide:0,     lotUnit:0.01, desc:'Bitcoin'       },
+  'ETHUSD': { type:'spread',     perSide:0,     lotUnit:0.01, desc:'Ethereum'      },
+  'LTCUSD': { type:'spread',     perSide:0,     lotUnit:0.01, desc:'Litecoin'      },
+  'XRPUSD': { type:'spread',     perSide:0,     lotUnit:0.01, desc:'Ripple'        },
+
+  // Energy
+  'XTIUSD': { type:'spread',     perSide:0,     lotUnit:0.01, desc:'WTI Oil'       },
+  'XBRUSD': { type:'spread',     perSide:0,     lotUnit:0.01, desc:'Brent Oil'     },
+  'NATGAS': { type:'spread',     perSide:0,     lotUnit:0.01, desc:'Natural Gas'   },
 };
+
 function calcCommission(symbol, lot) {
   const c = COMMISSION[symbol] || { type:'commission', perSide:0.07, lotUnit:0.01 };
   if(c.type === 'spread') return 0;
-  return (lot / c.lotUnit) * c.perSide * 2; // round trip
+  return parseFloat(((lot / c.lotUnit) * c.perSide * 2).toFixed(2)); // round trip
+}
+
+function getCommissionLabel(symbol) {
+  const c = COMMISSION[symbol];
+  if(!c) return 'Unknown symbol';
+  if(c.type==='spread') return 'Spread only (no commission)';
+  return `$${c.perSide}/side/0.01lot · $${(c.perSide*2).toFixed(2)} round trip`;
 }
 
 // ── MAIN TAB SWITCH ──
@@ -1572,8 +1619,23 @@ function selectDir(dir) {
 function selectNptChip(el, group) {
   document.querySelectorAll(`[data-group="${group}"]`).forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
-  if(group==='npt-sym') document.getElementById('npt-sym-custom').value = '';
+  if(group==='npt-sym') {
+    document.getElementById('npt-sym-custom').value = '';
+    updateNptCommLabel();
+  }
   updateNptSummary();
+}
+
+function updateNptCommLabel() {
+  const sym = document.querySelector('[data-group="npt-sym"].active')?.dataset.val ||
+              document.getElementById('npt-sym-custom').value.toUpperCase().trim();
+  const el  = document.getElementById('nptCommLabel');
+  if(!el) return;
+  if(!sym) { el.textContent=''; return; }
+  const c = COMMISSION[sym];
+  if(!c) { el.innerHTML = `<span style="color:var(--xau)">${sym} — Commission rate unknown (will use $0.07/side default)</span>`; return; }
+  const col = c.type==='spread' ? 'var(--blue)' : 'var(--muted)';
+  el.innerHTML = `<span style="color:${col}">${c.desc} · ${getCommissionLabel(sym)}</span>`;
 }
 
 function clearNptChip(group) {
