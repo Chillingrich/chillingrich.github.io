@@ -1,5 +1,5 @@
 {
-  "generated": "2026.05.20 06:51:03",
+  "generated": "2026.05.20 08:21:41",
   "account": 7979470,
   "trades": [
     {
@@ -25509,6 +25509,34 @@
       "candlesBeforePeak":332,
       "rangeInTrade": 72335.0,
       "avgCandleSize": 217.2
+    },
+    {
+      "posID": "4429254365",
+      "symbol": "XAUUSD",
+      "type": "sell",
+      "magic": 0,
+      "openTime": "2026.05.20 06:58:52",
+      "closeTime": "2026.05.20 08:06:17",
+      "entryPrice": 4464.58,
+      "exitPrice": 4472.12,
+      "sl": 4472.12,
+      "tp": 4453.53,
+      "peakPrice": 4456.82,
+      "peakTime": "2026.05.20 07:48:00",
+      "peakPips": 776.0,
+      "peakR": 1.03,
+      "maePrice": 4473.05,
+      "maeTime": "2026.05.20 08:06:00",
+      "maePips": -847.0,
+      "maeR": -1.12,
+      "exitPips": -754.0,
+      "exitR": -1.00,
+      "entryEfficiency": 47.8,
+      "exitEfficiency": -97.2,
+      "candlesInTrade": 69,
+      "candlesBeforePeak":51,
+      "rangeInTrade": 14735.0,
+      "avgCandleSize": 213.6
     }
   ]
 }
