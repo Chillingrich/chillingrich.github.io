@@ -113,6 +113,7 @@ table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10px
 th{text-align:left;padding:6px 8px;color:var(--muted);border-bottom:1px solid var(--border);letter-spacing:.06em;white-space:nowrap}
 td{padding:5px 8px;border-bottom:1px solid #0d1015;white-space:nowrap}
 tr:hover td{background:var(--bg3)}
+tr[onclick]:hover td{background:#1a2035;}
 .tag{display:inline-block;padding:1px 6px;font-size:8px;font-weight:700;letter-spacing:.04em}
 .tag-buy{background:rgba(0,229,160,.12);color:var(--green)}
 .tag-sell{background:rgba(255,77,109,.12);color:var(--red)}
@@ -1329,16 +1330,72 @@ function renderModal() {
   }).join('');
 
   // Trade table
+  renderModalTable(ts);
+}
+
+// sort state
+let modalSortCol = 'close_time';
+let modalSortDir = -1;
+
+function sortModalBy(col) {
+  if(modalSortCol === col) modalSortDir *= -1;
+  else { modalSortCol = col; modalSortDir = -1; }
+  renderModalTable(modalFiltered);
+}
+
+function renderModalTable(ts) {
   document.getElementById('modalTradeCount').textContent = '('+ts.length+' trades)';
-  document.getElementById('modalTable').innerHTML = [...sortedT].reverse().map((t,i)=>{
-    const isPos = t.profit_usd > 0;
-    const ann   = getAnn(t.posID);
-    const hasAnn = ann && (ann.exit?.length || ann.sl || ann.why?.length);
-    const annLabel = hasAnn
-      ? (ann.exit||[]).join(',') || '•••'
-      : '+ add';
-    return `<tr>
-      <td style="color:var(--muted)">${ts.length-i}</td>
+
+  // Sort
+  const sorted = [...ts].sort((a,b) => {
+    let av, bv;
+    switch(modalSortCol) {
+      case 'open_time':    av=parseTradeDate(a.open_time);  bv=parseTradeDate(b.open_time);  break;
+      case 'close_time':   av=parseTradeDate(a.close_time); bv=parseTradeDate(b.close_time); break;
+      case 'duration_min': av=a.duration_min; bv=b.duration_min; break;
+      case 'profit_pips':  av=a.profit_pips;  bv=b.profit_pips;  break;
+      case 'profit_usd':   av=a.profit_usd;   bv=b.profit_usd;   break;
+      case 'type':         av=a.type; bv=b.type; break;
+      case 'symbol':       av=a.symbol; bv=b.symbol; break;
+      default:             av=parseTradeDate(a.close_time); bv=parseTradeDate(b.close_time);
+    }
+    if(av < bv) return -modalSortDir;
+    if(av > bv) return  modalSortDir;
+    return 0;
+  });
+
+  // Header arrows
+  const cols = [
+    {id:'#',            key:null},
+    {id:'type',         key:'type'},
+    {id:'symbol',       key:'symbol'},
+    {id:'open_time',    key:'open_time'},
+    {id:'close_time',   key:'close_time'},
+    {id:'duration_min', key:'duration_min'},
+    {id:'profit_pips',  key:'profit_pips'},
+    {id:'profit_usd',   key:'profit_usd'},
+    {id:'comment',      key:null},
+    {id:'annotate',     key:null},
+  ];
+  const labels = ['#','Type','Symbol','Open','Close','Duration','Pips','P&L $','Comment','Annotate'];
+  document.querySelector('#modalTable').closest('table').querySelector('thead tr').innerHTML =
+    cols.map((c,i) => {
+      if(!c.key) return `<th>${labels[i]}</th>`;
+      const isActive = modalSortCol === c.key;
+      const arrow    = isActive ? (modalSortDir===1 ? ' ↑' : ' ↓') : '';
+      return `<th style="cursor:pointer;user-select:none${isActive?';color:var(--green)':''}" onclick="sortModalBy('${c.key}')">${labels[i]}${arrow}</th>`;
+    }).join('');
+
+  // Rows — click anywhere to open annotate
+  document.getElementById('modalTable').innerHTML = sorted.map((t,i)=>{
+    const isPos   = t.profit_usd > 0;
+    const ann     = getAnn(t.posID);
+    const hasAnn  = ann && (ann.exit?.length || ann.sl || ann.why?.length);
+    const annLabel= hasAnn ? (ann.exit||[]).join(',') || '•••' : '+ add';
+    const pk      = peakDataMap[t.posID];
+    const peakStr = pk ? ` ${pk.peakR}R` : '';
+    return `<tr style="cursor:pointer" onclick="openAnn('${t.posID}')" title="Click to annotate">
+      <td style="color:var(--muted)">${i+1}</td>
       <td><span class="tag ${t.type==='BUY'?'tag-buy':'tag-sell'}">${t.type}</span></td>
       <td style="color:var(--muted)">${t.symbol}</td>
       <td style="color:var(--muted);font-size:9px">${t.open_time}</td>
@@ -1347,7 +1404,7 @@ function renderModal() {
       <td class="${isPos?'pos':'neg'}">${t.profit_pips>0?'+':''}${t.profit_pips}</td>
       <td class="${isPos?'pos':'neg'}">${isPos?'+':''}$${t.profit_usd.toFixed(2)}</td>
       <td style="color:var(--muted);font-size:9px;max-width:120px;overflow:hidden;text-overflow:ellipsis">${t.comment||'-'}</td>
-      <td><button class="ann-btn ${hasAnn?'has-data':''}" onclick="openAnn('${t.posID}')">${annLabel}</button></td>
+      <td><span class="ann-btn ${hasAnn?'has-data':''}">${annLabel}${peakStr}</span></td>
     </tr>`;
   }).join('');
 }
