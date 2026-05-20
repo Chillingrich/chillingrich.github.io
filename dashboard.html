@@ -332,9 +332,32 @@ tr[onclick]:hover td{background:#1a2035;}
     <!-- OVERALL STATS -->
     <div class="stat-row" id="statRow"></div>
 
-    <!-- EA CARDS -->
-    <div class="sec-title">EA breakdown — click to view details</div>
-    <div class="ea-grid" id="eaGrid"></div>
+    <!-- EA P&L CHART + EA CARDS -->
+    <div class="section" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:10px" onclick="toggleEASection()">
+        <div class="sec-title" style="margin-bottom:0;border:none;padding:0">EA Breakdown</div>
+        <span id="eaToggleBtn" style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em">[ HIDE ]</span>
+      </div>
+      <div id="eaSection">
+        <!-- P&L Distribution Chart -->
+        <div style="margin-bottom:8px;display:flex;gap:4px;flex-wrap:wrap">
+          <button class="tl-btn active" id="donut-mode-pnl"    onclick="setDonutMode('pnl')"    style="font-size:8px">P&L $</button>
+          <button class="tl-btn"        id="donut-mode-trades"  onclick="setDonutMode('trades')"  style="font-size:8px">Trade Count</button>
+          <button class="tl-btn"        id="donut-mode-wr"      onclick="setDonutMode('wr')"      style="font-size:8px">Win Rate</button>
+          <button class="tl-btn"        id="donut-mode-pf"      onclick="setDonutMode('pf')"      style="font-size:8px">Profit Factor</button>
+          <button class="tl-btn"        id="donut-mode-avgwin"  onclick="setDonutMode('avgwin')"  style="font-size:8px">Avg Win</button>
+          <button class="tl-btn"        id="donut-mode-maxdd"   onclick="setDonutMode('maxdd')"   style="font-size:8px">Max DD</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;align-items:center">
+          <div style="position:relative;height:220px">
+            <canvas id="eaPnlDonut"></canvas>
+          </div>
+          <div id="eaLegend" style="font-family:var(--mono);font-size:9px;display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+        <!-- EA Cards -->
+        <div class="ea-grid" id="eaGrid"></div>
+      </div>
+    </div>
 
     <!-- EQUITY CURVE (collapsible) -->
     <div class="section" style="margin-bottom:10px">
@@ -961,6 +984,7 @@ function applyMainFilter() {
     return true;
   });
   renderStats(mainFiltered);
+  renderEAPnlChart(mainFiltered);
   renderEAGrid(mainFiltered);
   renderEquity(mainFiltered);
   renderSessionHeat(mainFiltered);
@@ -1063,6 +1087,7 @@ function showDashboard(trades) {
   document.getElementById('dashboard').style.display = 'block';
   mainFiltered = trades;
   renderStats(trades);
+  renderEAPnlChart(trades);
   renderEAGrid(trades);
   renderEquity(trades);
   renderSessionHeat(trades);
@@ -1097,6 +1122,160 @@ function renderStats(trades) {
       <div class="stat-label">${c.label}</div>
       <div class="stat-val ${c.cls}">${c.val}</div>
     </div>`).join('');
+}
+
+function toggleEASection() {
+  const el  = document.getElementById('eaSection');
+  const btn = document.getElementById('eaToggleBtn');
+  const hidden = el.style.display === 'none';
+  el.style.display  = hidden ? 'block' : 'none';
+  btn.textContent   = hidden ? '[ HIDE ]' : '[ SHOW ]';
+}
+
+let donutMode     = 'pnl';
+let donutLastData = [];
+
+function setDonutMode(mode) {
+  donutMode = mode;
+  ['pnl','trades','wr','pf','avgwin','maxdd'].forEach(m => {
+    const el = document.getElementById(`donut-mode-${m}`);
+    if(el) el.classList.toggle('active', m===mode);
+  });
+  renderEAPnlChart(donutLastData);
+}
+
+function renderEAPnlChart(trades) {
+  donutLastData = trades;
+
+  // Group by EA
+  const groups = {};
+  trades.forEach(t => {
+    const k = t.magic;
+    if(!groups[k]) groups[k] = [];
+    groups[k].push(t);
+  });
+
+  // Build EA stats
+  const eaStats = Object.entries(groups).map(([magic, ts]) => {
+    const info   = eaInfo(magic);
+    const pnl    = ts.reduce((a,t)=>a+t.profit_usd, 0);
+    const wins   = ts.filter(t=>t.profit_usd>0);
+    const losses = ts.filter(t=>t.profit_usd<=0);
+    const wr     = ts.length ? wins.length/ts.length*100 : 0;
+    const avgW   = wins.length   ? wins.reduce((a,t)=>a+t.profit_usd,0)/wins.length : 0;
+    const avgL   = losses.length ? Math.abs(losses.reduce((a,t)=>a+t.profit_usd,0)/losses.length) : 0;
+    const pf     = avgL>0 ? (avgW*wins.length)/(avgL*losses.length) : 0;
+    // Max DD
+    let peak=0,dd=0,maxDD=0,bal=0;
+    [...ts].sort((a,b)=>parseTradeDate(a.close_time)-parseTradeDate(b.close_time))
+      .forEach(t=>{ bal+=t.profit_usd; if(bal>peak)peak=bal; dd=peak-bal; if(dd>maxDD)maxDD=dd; });
+    return { magic, info, pnl, count:ts.length, wr, pf, avgW, maxDD };
+  });
+
+  // Mode config
+  const modes = {
+    pnl:    { label:'Net P&L $',      val:e=>e.pnl,    fmt:v=>`${v>=0?'+':''}$${v.toFixed(2)}`,  sort:(a,b)=>b.pnl-a.pnl,       abs:true,  centerLabel:'NET P&L' },
+    trades: { label:'Trade Count',    val:e=>e.count,  fmt:v=>`${v} trades`,                       sort:(a,b)=>b.count-a.count,    abs:false, centerLabel:'TRADES'  },
+    wr:     { label:'Win Rate %',     val:e=>e.wr,     fmt:v=>`${v.toFixed(1)}%`,                  sort:(a,b)=>b.wr-a.wr,          abs:false, centerLabel:'WIN RATE'},
+    pf:     { label:'Profit Factor',  val:e=>e.pf,     fmt:v=>`${v.toFixed(2)}`,                   sort:(a,b)=>b.pf-a.pf,          abs:false, centerLabel:'P.FACTOR'},
+    avgwin: { label:'Avg Win $',      val:e=>e.avgW,   fmt:v=>`$${v.toFixed(2)}`,                  sort:(a,b)=>b.avgW-a.avgW,      abs:false, centerLabel:'AVG WIN' },
+    maxdd:  { label:'Max Drawdown $', val:e=>e.maxDD,  fmt:v=>`-$${v.toFixed(2)}`,                 sort:(a,b)=>b.maxDD-a.maxDD,    abs:false, centerLabel:'MAX DD'  },
+  };
+  const m      = modes[donutMode] || modes.pnl;
+  const sorted = [...eaStats].sort(m.sort);
+  const values = sorted.map(e => m.abs ? Math.abs(m.val(e)) : Math.max(m.val(e), 0));
+  const total  = values.reduce((a,v)=>a+v, 0);
+
+  // Center text
+  let centerVal = '';
+  if(donutMode==='pnl') {
+    const net = sorted.reduce((a,e)=>a+e.pnl,0);
+    centerVal = `${net>=0?'+':''}$${net.toFixed(0)}`;
+  } else if(donutMode==='trades') {
+    centerVal = `${sorted.reduce((a,e)=>a+e.count,0)}`;
+  } else if(donutMode==='wr') {
+    const avg = sorted.length ? sorted.reduce((a,e)=>a+e.wr,0)/sorted.length : 0;
+    centerVal = `${avg.toFixed(1)}%`;
+  } else if(donutMode==='pf') {
+    const all = eaStats.reduce((a,e)=>({w:a.w+e.avgW*e.wins,l:a.l+e.maxDD}),{w:0,l:0});
+    const net = sorted.reduce((a,e)=>a+e.pnl,0);
+    centerVal = sorted.length ? `${(sorted.reduce((a,e)=>a+e.pf,0)/sorted.length).toFixed(2)}` : '-';
+  } else if(donutMode==='avgwin') {
+    const avg = sorted.length ? sorted.reduce((a,e)=>a+e.avgW,0)/sorted.length : 0;
+    centerVal = `$${avg.toFixed(2)}`;
+  } else if(donutMode==='maxdd') {
+    const worst = sorted.length ? Math.max(...sorted.map(e=>e.maxDD)) : 0;
+    centerVal = `-$${worst.toFixed(0)}`;
+  }
+
+  // Draw chart
+  if(charts.eaDonut) { charts.eaDonut.destroy(); delete charts.eaDonut; }
+  const ctx = document.getElementById('eaPnlDonut');
+  if(!ctx || !sorted.length) return;
+
+  charts.eaDonut = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels:   sorted.map(e=>e.info.name),
+      datasets: [{
+        data:            values,
+        backgroundColor: sorted.map(e=>e.info.color+'cc'),
+        borderColor:     sorted.map(e=>e.info.color),
+        borderWidth:     1.5,
+        hoverOffset:     6,
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins: {
+        legend: { display:false },
+        tooltip: { callbacks: {
+          label: c => {
+            const e   = sorted[c.dataIndex];
+            const pct = total>0 ? (values[c.dataIndex]/total*100).toFixed(1) : 0;
+            return ` ${e.info.name}: ${m.fmt(m.val(e))} (${pct}%)`;
+          }
+        }}
+      }
+    },
+    plugins: [{
+      id: 'centerText',
+      beforeDraw(chart) {
+        const {ctx:c, chartArea:{top,bottom,left,right}} = chart;
+        const cx = (left+right)/2, cy = (top+bottom)/2;
+        const isNeg = donutMode==='maxdd' || (donutMode==='pnl' && parseFloat(centerVal)<0);
+        const col   = donutMode==='maxdd' ? 'var(--red)' : isNeg ? '#ff4d6d' : '#00e5a0';
+        c.save();
+        c.textAlign='center'; c.textBaseline='middle';
+        c.font=`700 14px 'Space Mono',monospace`;
+        c.fillStyle=col;
+        c.fillText(centerVal, cx, cy-8);
+        c.font=`9px 'Space Mono',monospace`;
+        c.fillStyle='#a0aec0';
+        c.fillText(m.centerLabel, cx, cy+10);
+        c.restore();
+      }
+    }]
+  });
+
+  // Legend
+  document.getElementById('eaLegend').innerHTML = sorted.map((e,i) => {
+    const val    = m.val(e);
+    const pct    = total>0 ? (values[i]/total*100).toFixed(1) : 0;
+    const valCol = donutMode==='pnl' ? (val>=0?'var(--green)':'var(--red)')
+                 : donutMode==='maxdd' ? 'var(--red)'
+                 : donutMode==='wr'    ? (val>=50?'var(--green)':'var(--xau)')
+                 : donutMode==='pf'    ? (val>=1.5?'var(--green)':val<1?'var(--red)':'var(--xau)')
+                 : 'var(--text)';
+    return `<div style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:3px 0" onclick="openModal(${e.magic})">
+      <div style="width:8px;height:8px;background:${e.info.color};flex-shrink:0;border-radius:1px"></div>
+      <div style="flex:1;min-width:0">
+        <div style="color:var(--text);font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.info.name}</div>
+        <div style="color:var(--muted);font-size:8px">${e.count} trades · ${pct}%</div>
+      </div>
+      <div style="color:${valCol};font-weight:700;font-size:9px;white-space:nowrap">${m.fmt(val)}</div>
+    </div>`;
+  }).join('');
 }
 
 function renderEAGrid(trades) {
