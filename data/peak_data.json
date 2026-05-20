@@ -1,5 +1,5 @@
 {
-  "generated": "2026.05.20 18:41:55",
+  "generated": "2026.05.21 02:17:11",
   "account": 7979470,
   "trades": [
     {
@@ -26155,6 +26155,34 @@
       "avgCandleSize": 171.5
     },
     {
+      "posID": "4429583391",
+      "symbol": "BTCUSD",
+      "type": "buy",
+      "magic": 0,
+      "openTime": "2026.05.20 17:16:55",
+      "closeTime": "2026.05.20 19:20:43",
+      "entryPrice": 77427.59,
+      "exitPrice": 77118.35,
+      "sl": 0.00,
+      "tp": 0.00,
+      "peakPrice": 77791.12,
+      "peakTime": "2026.05.20 18:16:00",
+      "peakPips": 36353.0,
+      "peakR": 0.00,
+      "maePrice": 77094.81,
+      "maeTime": "2026.05.20 19:20:00",
+      "maePips": -33278.0,
+      "maeR": 0.00,
+      "exitPips": -30924.0,
+      "exitR": 0.00,
+      "entryEfficiency": 52.2,
+      "exitEfficiency": -85.1,
+      "candlesInTrade": 125,
+      "candlesBeforePeak":61,
+      "rangeInTrade": 963661.0,
+      "avgCandleSize": 7709.3
+    },
+    {
       "posID": "4429587734",
       "symbol": "XAUUSD",
       "type": "buy",
@@ -26349,6 +26377,34 @@
       "candlesBeforePeak":2,
       "rangeInTrade": 1631.0,
       "avgCandleSize": 326.2
+    },
+    {
+      "posID": "4429772665",
+      "symbol": "XAUUSD",
+      "type": "sell",
+      "magic": 0,
+      "openTime": "2026.05.20 21:55:46",
+      "closeTime": "2026.05.21 01:31:14",
+      "entryPrice": 4544.54,
+      "exitPrice": 4540.27,
+      "sl": 4560.24,
+      "tp": 0.00,
+      "peakPrice": 4535.13,
+      "peakTime": "2026.05.21 01:23:00",
+      "peakPips": 941.0,
+      "peakR": 0.60,
+      "maePrice": 4550.38,
+      "maeTime": "2026.05.20 23:10:00",
+      "maePips": -584.0,
+      "maeR": -0.37,
+      "exitPips": 427.0,
+      "exitR": 0.27,
+      "entryEfficiency": 61.7,
+      "exitEfficiency": 45.4,
+      "candlesInTrade": 156,
+      "candlesBeforePeak":148,
+      "rangeInTrade": 22229.0,
+      "avgCandleSize": 142.5
     }
   ]
 }
