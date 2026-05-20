@@ -534,6 +534,65 @@ tr:hover td{background:var(--bg3)}
   </div>
 </div>
 
+<!-- EDIT PAPER TRADE MODAL -->
+<div id="editPTModal" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(4,6,10,.92);align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg2);border:1px solid var(--border);width:100%;max-width:480px;max-height:90vh;overflow-y:auto">
+    <div class="ann-hdr">
+      <div class="ann-hdr-title" id="editPTTitle">Edit Paper Trade</div>
+      <button class="modal-close" onclick="closeEditPT()">✕</button>
+    </div>
+    <div class="ann-body">
+
+      <!-- Entry / SL / TP -->
+      <div>
+        <div class="ann-section-label">Price Levels</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="ann-input-row">
+            <span class="ann-input-label">Entry</span>
+            <input class="ann-input" id="edit-entry" type="number" step="0.01" oninput="updateEditCalc()">
+          </div>
+          <div class="ann-input-row">
+            <span class="ann-input-label">Stop Loss</span>
+            <input class="ann-input" id="edit-sl" type="number" step="0.01" oninput="updateEditCalc()">
+          </div>
+          <div class="ann-input-row">
+            <span class="ann-input-label">Take Profit</span>
+            <input class="ann-input" id="edit-tp" type="number" step="0.01" oninput="updateEditCalc()">
+          </div>
+          <div class="ann-input-row">
+            <span class="ann-input-label">Lot Size</span>
+            <input class="ann-input" id="edit-lot" type="number" step="0.01" oninput="updateEditCalc()">
+          </div>
+        </div>
+        <div id="editCalcDisplay" style="font-family:var(--mono);font-size:9px;color:var(--blue);margin-top:6px;min-height:16px"></div>
+      </div>
+
+      <!-- Strategy -->
+      <div>
+        <div class="ann-section-label">Strategy (เลือกได้หลายอัน)</div>
+        <div class="npt-tf-row" id="editStratChips"></div>
+      </div>
+
+      <!-- Hypothesis -->
+      <div>
+        <div class="ann-section-label">Hypothesis</div>
+        <textarea class="ann-input" id="edit-hypo" rows="2" placeholder="เหตุผลที่คิดว่าจะได้กำไร..."></textarea>
+      </div>
+
+      <!-- Notes -->
+      <div>
+        <div class="ann-section-label">Plan / Notes</div>
+        <textarea class="ann-input" id="edit-notes" rows="2" placeholder="แผนการ, จุดที่จะขยับ SL, target..."></textarea>
+      </div>
+
+    </div>
+    <div class="ann-footer">
+      <button class="ann-cancel" onclick="closeEditPT()">Cancel</button>
+      <button class="ann-save" onclick="saveEditPT()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- STRATEGY LIBRARY MODAL -->
 <div id="stratModal">
   <div class="strat-box">
@@ -1927,12 +1986,12 @@ function savePT(id, data) {
   const idx = all.findIndex(t=>t.id===id);
   if(idx>=0) all[idx]=data; else all.push(data);
   localStorage.setItem(PT_KEY, JSON.stringify(all));
-  schedulePTExport();
+  // ไม่ auto export — กด [↓ Export & Sync] เองเมื่อพร้อม push
 }
 function deletePT(id) {
   const all = getAllPT().filter(t=>t.id!==id);
   localStorage.setItem(PT_KEY, JSON.stringify(all));
-  schedulePTExport();
+  // ไม่ auto export
 }
 
 // ── EXPORT paper_trades.json → Downloads (for push_all.sh) ──
@@ -2290,18 +2349,96 @@ function ptCard(t) {
     <div class="pt-row"><span>Commission</span><span style="color:var(--red)">-$${(t.commission||0).toFixed(2)}</span></div>
     <div class="pt-row"><span>P&L</span><span style="color:${pnlCol};font-weight:700">${pnlStr}</span></div>
     ${t.hypo?`<div style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:6px;border-top:1px solid var(--border);padding-top:6px">💭 ${t.hypo}</div>`:''}
+    ${t.planNotes?`<div style="font-family:var(--mono);font-size:8px;color:var(--xau);margin-top:3px">📋 ${t.planNotes}</div>`:''}
     ${!isOpen&&t.lessons?`<div style="font-family:var(--mono);font-size:8px;color:var(--blue);margin-top:4px">💡 ${t.lessons}</div>`:''}
     ${tlBtns}
     ${tlHTML}
     <div class="pt-actions" style="margin-top:8px">
       ${isOpen?`<button class="pt-btn close" onclick="openClosePT('${t.id}')">Close Trade</button>`:''}
+      ${isOpen?`<button class="pt-btn view" onclick="openEditPT('${t.id}')">Edit</button>`:''}
       <button class="pt-btn del" onclick="if(confirm('Delete?')){deletePT('${t.id}');renderPaperTrades()}">Delete</button>
     </div>
   </div>`;
 }
 
+// ── EDIT PAPER TRADE ──
+let editPTCurrentID = null;
+
+function openEditPT(id) {
+  editPTCurrentID = id;
+  const t = getAllPT().find(p=>p.id===id);
+  if(!t) return;
+
+  document.getElementById('editPTTitle').textContent = `Edit · ${t.dir.toUpperCase()} ${t.symbol}`;
+  document.getElementById('edit-entry').value = t.entry||'';
+  document.getElementById('edit-sl').value    = t.sl||'';
+  document.getElementById('edit-tp').value    = t.tp||'';
+  document.getElementById('edit-lot').value   = t.lot||'0.01';
+  document.getElementById('edit-hypo').value  = t.hypo||'';
+  document.getElementById('edit-notes').value = t.planNotes||'';
+
+  // Load strategy chips with current selection
+  const strats  = getAllStrats();
+  const selected = t.strategies||[];
+  document.getElementById('editStratChips').innerHTML = strats.map(s=>
+    `<div class="npt-tf-btn ${selected.includes(s.name)?'active':''}"
+          data-group="edit-strat" data-val="${s.name}"
+          onclick="this.classList.toggle('active')">${s.name}</div>`
+  ).join('');
+
+  updateEditCalc();
+  document.getElementById('editPTModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEditPT() {
+  document.getElementById('editPTModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function updateEditCalc() {
+  const entry = parseFloat(document.getElementById('edit-entry').value)||0;
+  const sl    = parseFloat(document.getElementById('edit-sl').value)||0;
+  const tp    = parseFloat(document.getElementById('edit-tp').value)||0;
+  const lot   = parseFloat(document.getElementById('edit-lot').value)||0.01;
+  const el    = document.getElementById('editCalcDisplay');
+  if(!entry||!sl) { el.textContent=''; return; }
+  const slDist = Math.abs(entry-sl);
+  const tpDist = tp ? Math.abs(tp-entry) : 0;
+  const rr     = slDist>0&&tpDist>0 ? (tpDist/slDist).toFixed(2) : '?';
+  const slRisk = (slDist * lot * 100).toFixed(2);
+  const col    = parseFloat(rr)>=2?'var(--green)':parseFloat(rr)>=1?'var(--xau)':'var(--red)';
+  el.innerHTML = `SL dist <b>${slDist.toFixed(2)} pts</b> · Risk <span style="color:var(--red)">-$${slRisk}</span>`
+    + (tp ? ` · RR <b style="color:${col}">1:${rr}</b>` : '');
+}
+
+function saveEditPT() {
+  const t = getAllPT().find(p=>p.id===editPTCurrentID);
+  if(!t) return;
+  const entry = parseFloat(document.getElementById('edit-entry').value)||t.entry;
+  const sl    = parseFloat(document.getElementById('edit-sl').value)||t.sl;
+  const tp    = parseFloat(document.getElementById('edit-tp').value)||t.tp;
+  const lot   = parseFloat(document.getElementById('edit-lot').value)||t.lot;
+  const hypo  = document.getElementById('edit-hypo').value.trim();
+  const notes = document.getElementById('edit-notes').value.trim();
+  const strats= [...document.querySelectorAll('[data-group="edit-strat"].active')].map(c=>c.dataset.val);
+  const slDist = Math.abs(entry-sl);
+  const tpDist = Math.abs(tp-entry);
+  const rr     = slDist>0 ? (tpDist/slDist).toFixed(2) : t.rr;
+  const comm   = calcCommission(t.symbol, lot);
+
+  // Log edit event in timeline
+  const timeline = [...(t.timeline||[]), {
+    type: 'edit', icon: '✏️',
+    text: `Plan updated · SL ${sl} TP ${tp} RR 1:${rr}`,
+    time: new Date().toISOString()
+  }];
+
+  savePT(editPTCurrentID, {...t, entry, sl, tp, lot, hypo, planNotes:notes, strategies:strats, rr, commission:comm, timeline});
+  closeEditPT();
+  renderPaperTrades();
+}
 // ── CLOSE PAPER TRADE ──
-let cptCurrentID = null;
 function openClosePT(id) {
   cptCurrentID = id;
   const t = getAllPT().find(p=>p.id===id);
