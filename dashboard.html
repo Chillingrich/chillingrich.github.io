@@ -362,7 +362,12 @@ tr:hover td{background:var(--bg3)}
 
       <!-- PAPER TRADE -->
       <div id="lab-paper">
-        <button class="pt-add-btn" onclick="openNewPT()">+ New Paper Trade</button>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+          <button class="pt-add-btn" style="margin-bottom:0" onclick="openNewPT()">+ New Paper Trade</button>
+          <button class="hdr-btn green" onclick="exportPTtoFile()" title="Download paper_trades.json → put in Downloads → run push_all.sh">↓ Export & Sync</button>
+          <button class="hdr-btn xau" onclick="fetchPaperTrades()" title="Fetch latest from GitHub">↺ Pull from GitHub</button>
+          <span id="ptSyncBadge" style="font-family:var(--mono);font-size:8px;color:var(--muted)"></span>
+        </div>
         <div class="sec-title">Open Positions</div>
         <div class="pt-grid" id="ptOpenGrid"></div>
         <div class="sec-title" style="margin-top:8px">Closed Positions</div>
@@ -502,19 +507,6 @@ tr:hover td{background:var(--bg3)}
           <input class="ann-input" id="npt-lot" type="number" step="0.01" value="0.01" placeholder="0.01" oninput="updateNptSummary()">
         </div>
         <div id="nptLotCalcInfo" style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:4px;min-height:14px"></div>
-      </div>
-
-      <!-- Setup -->
-      <div>
-        <div class="ann-section-label">Setup Type</div>
-        <div class="npt-tf-row">
-          <div class="npt-tf-btn" data-group="npt-setup" data-val="DWR"         onclick="selectNptChip(this,'npt-setup')">DWR</div>
-          <div class="npt-tf-btn" data-group="npt-setup" data-val="ORB"         onclick="selectNptChip(this,'npt-setup')">ORB</div>
-          <div class="npt-tf-btn" data-group="npt-setup" data-val="HTF Pullback" onclick="selectNptChip(this,'npt-setup')">HTF Pullback</div>
-          <div class="npt-tf-btn" data-group="npt-setup" data-val="BB Reversal" onclick="selectNptChip(this,'npt-setup')">BB Reversal</div>
-          <div class="npt-tf-btn" data-group="npt-setup" data-val="S/R Bounce"  onclick="selectNptChip(this,'npt-setup')">S/R Bounce</div>
-          <div class="npt-tf-btn" data-group="npt-setup" data-val="Custom"      onclick="selectNptChip(this,'npt-setup')">Custom</div>
-        </div>
       </div>
 
       <!-- Strategy -->
@@ -1720,18 +1712,66 @@ function deleteStrategy(id) {
 
 function renderStratList() {
   const strats = getAllStrats();
-  document.getElementById('stratList').innerHTML = strats.length
-    ? strats.map(s=>`
-        <div class="strat-item">
-          <div style="flex:1">
-            <div class="strat-item-name">${s.name}${s.tf?` <span style="color:var(--muted);font-weight:400">· ${s.tf}</span>`:''}</div>
-            ${s.desc?`<div class="strat-item-desc">${s.desc}</div>`:''}
-          </div>
-          <div class="strat-item-actions">
-            <button class="tl-btn" onclick="deleteStrategy('${s.id}')" style="color:var(--red);border-color:var(--red)">✕</button>
-          </div>
-        </div>`).join('')
-    : '<div style="font-family:var(--mono);font-size:9px;color:var(--muted)">No strategies yet</div>';
+  const el = document.getElementById('stratList');
+  if(!strats.length) {
+    el.innerHTML = '<div style="font-family:var(--mono);font-size:9px;color:var(--muted)">No strategies yet</div>';
+    return;
+  }
+  el.innerHTML = strats.map((s,i)=>`
+    <div class="strat-item" draggable="true"
+         data-id="${s.id}"
+         ondragstart="onStratDragStart(event)"
+         ondragover="onStratDragOver(event)"
+         ondrop="onStratDrop(event)"
+         ondragend="onStratDragEnd(event)"
+         style="cursor:grab">
+      <div style="color:var(--muted);font-family:var(--mono);font-size:12px;padding:0 8px 0 0;cursor:grab;user-select:none">⠿</div>
+      <div style="flex:1">
+        <div class="strat-item-name">${s.name}${s.tf?` <span style="color:var(--muted);font-weight:400">· ${s.tf}</span>`:''}</div>
+        ${s.desc?`<div class="strat-item-desc">${s.desc}</div>`:''}
+      </div>
+      <div class="strat-item-actions">
+        <button class="tl-btn" onclick="deleteStrategy('${s.id}')" style="color:var(--red);border-color:var(--red)">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── DRAG TO REORDER STRATEGIES ──
+let dragSrcID = null;
+
+function onStratDragStart(e) {
+  dragSrcID = e.currentTarget.dataset.id;
+  e.currentTarget.style.opacity = '0.4';
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function onStratDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  // highlight drop target
+  document.querySelectorAll('.strat-item').forEach(el => el.style.borderColor = '');
+  e.currentTarget.style.borderLeftColor = 'var(--green)';
+}
+
+function onStratDrop(e) {
+  e.preventDefault();
+  const targetID = e.currentTarget.dataset.id;
+  if(!dragSrcID || dragSrcID === targetID) return;
+  const strats = getAllStrats();
+  const srcIdx = strats.findIndex(s=>s.id===dragSrcID);
+  const tgtIdx = strats.findIndex(s=>s.id===targetID);
+  if(srcIdx<0||tgtIdx<0) return;
+  // reorder
+  const [moved] = strats.splice(srcIdx, 1);
+  strats.splice(tgtIdx, 0, moved);
+  saveAllStrats(strats);
+  renderStratList();
+}
+
+function onStratDragEnd(e) {
+  e.currentTarget.style.opacity = '1';
+  document.querySelectorAll('.strat-item').forEach(el => el.style.borderColor = '');
+  dragSrcID = null;
 }
 
 function renderNptStratChips() {
@@ -1878,16 +1918,71 @@ function switchLabTab(tab) {
 
 // ── PAPER TRADE STORAGE ──
 const PT_KEY = 'cr_paper_trades';
-function getAllPT() { try { return JSON.parse(localStorage.getItem(PT_KEY)||'[]'); } catch(e){return[];} }
+
+function getAllPT() {
+  try { return JSON.parse(localStorage.getItem(PT_KEY)||'[]'); } catch(e){return[];}
+}
 function savePT(id, data) {
   const all = getAllPT();
   const idx = all.findIndex(t=>t.id===id);
   if(idx>=0) all[idx]=data; else all.push(data);
   localStorage.setItem(PT_KEY, JSON.stringify(all));
+  schedulePTExport();
 }
 function deletePT(id) {
   const all = getAllPT().filter(t=>t.id!==id);
   localStorage.setItem(PT_KEY, JSON.stringify(all));
+  schedulePTExport();
+}
+
+// ── EXPORT paper_trades.json → Downloads (for push_all.sh) ──
+let ptExportTimer = null;
+function schedulePTExport() {
+  clearTimeout(ptExportTimer);
+  ptExportTimer = setTimeout(exportPTtoFile, 1500); // debounce 1.5s
+}
+
+function exportPTtoFile() {
+  const all  = getAllPT();
+  const json = JSON.stringify({ generated: new Date().toISOString(), trades: all }, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'paper_trades.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── FETCH paper_trades.json from GitHub & merge ──
+async function fetchPaperTrades() {
+  try {
+    const url = 'https://chillingrich.github.io/data/paper_trades.json?t=' + Date.now();
+    const res = await fetch(url);
+    if(!res.ok) return;
+    const json = await res.json();
+    if(!json.trades?.length) return;
+
+    // Upsert: GitHub wins for fields not yet set locally
+    const local  = getAllPT();
+    const merged = [...local];
+
+    json.trades.forEach(remote => {
+      const idx = merged.findIndex(t=>t.id===remote.id);
+      if(idx < 0) {
+        merged.push(remote); // new trade from another device
+      }
+      // If exists locally — keep local version (local edits take priority)
+    });
+
+    localStorage.setItem(PT_KEY, JSON.stringify(merged));
+    renderPaperTrades();
+    const badge = document.getElementById('ptSyncBadge');
+    if(badge) badge.textContent = `☁ synced ${new Date().toLocaleTimeString()}`;
+    console.log('Paper trades synced from GitHub:', json.trades.length);
+  } catch(e) {
+    console.log('Paper trades fetch:', e.message);
+  }
 }
 
 // ── NEW PAPER TRADE MODAL ──
@@ -2594,6 +2689,7 @@ async function fetchPeakData() {
 
 fetchFromGitHub();
 fetchPeakData();
+fetchPaperTrades();
 </script>
 </body>
 </html>
