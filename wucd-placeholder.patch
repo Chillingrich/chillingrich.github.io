@@ -1,0 +1,43 @@
+From e10fc712576e6386201f8f305903202a8de52ab1 Mon Sep 17 00:00:00 2001
+From: Claude <claude@fix.local>
+Date: Mon, 1 Jun 2026 17:33:35 +0000
+Subject: [PATCH] fix: replace misleading WU/CD placeholder values with generic
+ labels
+
+WU/CD input fields had hardcoded placeholder values (0.8km/6:13/119
+and 0.9km/6:30/115) that made every FIT-imported session appear to
+show the same data when fields were empty. Changed to generic
+placeholders: km / m:ss / bpm.
+---
+ dashboard.html | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/dashboard.html b/dashboard.html
+index 5fe3633..6394cc5 100644
+--- a/dashboard.html
++++ b/dashboard.html
+@@ -486,15 +486,15 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
+       <div class="wucd-grid">
+         <div class="wucd-card">
+           <div class="wucd-title">🔥 WARM-UP</div>
+-          <div class="wucd-field"><span class="wucd-label">Distance</span><input class="wucd-input" type="number" step="0.1" id="wuDist" placeholder="0.8 km"></div>
+-          <div class="wucd-field"><span class="wucd-label">Avg Pace</span><input class="wucd-input" type="text" id="wuPace" placeholder="6:13"></div>
+-          <div class="wucd-field"><span class="wucd-label">Avg HR</span><input class="wucd-input" type="number" id="wuHR" placeholder="119"></div>
++          <div class="wucd-field"><span class="wucd-label">Distance</span><input class="wucd-input" type="number" step="0.1" id="wuDist" placeholder="km"></div>
++          <div class="wucd-field"><span class="wucd-label">Avg Pace</span><input class="wucd-input" type="text" id="wuPace" placeholder="m:ss"></div>
++          <div class="wucd-field"><span class="wucd-label">Avg HR</span><input class="wucd-input" type="number" id="wuHR" placeholder="bpm"></div>
+         </div>
+         <div class="wucd-card">
+           <div class="wucd-title">❄️ COOL-DOWN</div>
+-          <div class="wucd-field"><span class="wucd-label">Distance</span><input class="wucd-input" type="number" step="0.1" id="cdDist" placeholder="0.9 km"></div>
+-          <div class="wucd-field"><span class="wucd-label">Avg Pace</span><input class="wucd-input" type="text" id="cdPace" placeholder="6:30"></div>
+-          <div class="wucd-field"><span class="wucd-label">Avg HR</span><input class="wucd-input" type="number" id="cdHR" placeholder="115"></div>
++          <div class="wucd-field"><span class="wucd-label">Distance</span><input class="wucd-input" type="number" step="0.1" id="cdDist" placeholder="km"></div>
++          <div class="wucd-field"><span class="wucd-label">Avg Pace</span><input class="wucd-input" type="text" id="cdPace" placeholder="m:ss"></div>
++          <div class="wucd-field"><span class="wucd-label">Avg HR</span><input class="wucd-input" type="number" id="cdHR" placeholder="bpm"></div>
+         </div>
+       </div>
+ 
+-- 
+2.43.0
+
